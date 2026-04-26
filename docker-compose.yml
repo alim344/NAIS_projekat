@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  #  MILA: BAZA
+  neo4j-mila:
+    image: neo4j:latest
+    container_name: neo4j-mila
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - NEO4J_AUTH=neo4j/password123
+    networks:
+      - autoskola-network
+
+  #  MILA: Class Organization
+  class-organization:
+    build:
+      context: ./class-organization
+    container_name: class-organization-service
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_NEO4J_URI=bolt://neo4j-mila:7687
+      - SPRING_NEO4J_AUTHENTICATION_USERNAME=neo4j
+      - SPRING_NEO4J_AUTHENTICATION_PASSWORD=password123
+      - SERVER_PORT=8080
+    depends_on:
+      - neo4j-mila
+    networks:
+      - autoskola-network
+
+
+networks:
+  autoskola-network:
+    driver: bridge
