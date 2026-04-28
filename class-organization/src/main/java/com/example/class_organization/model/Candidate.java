@@ -17,7 +17,7 @@ public class Candidate extends  User{
     private TrainingStatus status;
 
     @Relationship(type = "HAS_PREFERENCE", direction = Relationship.Direction.OUTGOING)
-    private TimePreference timePreference;
+    private List<TimePreference> timePreference;
 
     @Relationship(type = "ATTENDS", direction = Relationship.Direction.OUTGOING)
     private List<Attendance> attendanceList;
