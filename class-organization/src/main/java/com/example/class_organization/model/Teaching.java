@@ -21,6 +21,7 @@ public class Teaching {
         this.note = note;
         this.score = score;
     }
+    public Teaching() {}
 
     public Long getId() {
         return id;
