@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/vehicles")
@@ -63,5 +64,10 @@ public class VehicleController {
         vehicle.setStatus(dto.getStatus());
         vehicle.setCurrentMileage(dto.getCurrentMileage());
         return vehicle;
+    }
+
+    @GetMapping("/by-status")
+    public List<Map<String, Object>> getVehiclesCountByStatus() {
+        return vehicleService.getVehiclesCountByStatus();
     }
 }
