@@ -1,0 +1,35 @@
+package com.example.theory_organization.controller;
+
+import com.example.theory_organization.model.Professor;
+import com.example.theory_organization.service.ProfessorService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/professors")
+@RequiredArgsConstructor
+public class ProfessorController {
+
+    private final ProfessorService professorService;
+
+    @PostMapping
+    public ResponseEntity<Professor> create(@RequestBody Professor professor) {
+        return ResponseEntity.ok(professorService.save(professor));
+    }
+
+    @PostMapping("/{profId}/assign-to-class/{classId}")
+    public ResponseEntity<String> assign(@PathVariable Long profId, @PathVariable Long classId) {
+        professorService.assignToClass(profId, classId);
+        return ResponseEntity.ok("Profesor je dodeljen casu (LECTURES).");
+    }
+
+
+    @GetMapping("/teaching-stats")
+    public List<Map<String, Object>> getStats() {
+        return professorService.getStats();
+    }
+}
