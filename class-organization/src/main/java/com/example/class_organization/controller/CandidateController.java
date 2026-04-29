@@ -83,8 +83,10 @@ public class CandidateController {
 
 
 
-
-
+    @GetMapping("/complex/getCandidatesByInstId/{id}")
+    public ResponseEntity<List<Candidate>> getCandidatesByInstructor(@PathVariable String id){
+        return ResponseEntity.ok(candidateService.getCandidatesByInstructorId(id));
+    }
 
 
 }

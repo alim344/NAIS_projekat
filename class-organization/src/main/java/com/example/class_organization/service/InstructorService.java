@@ -2,6 +2,7 @@ package com.example.class_organization.service;
 
 import com.example.class_organization.dto.AddingCandidatesDTO;
 import com.example.class_organization.dto.InstructorDTO;
+import com.example.class_organization.model.Category;
 import com.example.class_organization.model.Instructor;
 import com.example.class_organization.repo.InstructorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -85,6 +86,18 @@ public class InstructorService {
             System.out.println("Greska u bayu"+e.getMessage());
         }
 
+
+    }
+
+
+
+    public List<Instructor> getInstructorReccomendations(String id){
+        return instructorRepository.recommendInstructorsForCandidate(id);
+    }
+
+
+    public List<Instructor> getTopInstructors(int minClasses){
+        return instructorRepository.findTopInstructorsByScore(minClasses);
 
     }
 }

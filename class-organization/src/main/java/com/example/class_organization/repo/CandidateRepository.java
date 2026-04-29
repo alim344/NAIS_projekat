@@ -93,4 +93,17 @@ public interface CandidateRepository extends Neo4jRepository<Candidate, Long> {
     int deleteHasPreference(String username, Long timeprefId);
 
 
+
+
+    @Query("MATCH (instructor:Instructor)-[:TRAINS]->(c:Candidate) " +
+            "WHERE elementId(instructor) = $instructorId " +
+            "MATCH (c)-[a:ATTENDS]->(pc:PracticalClass) " +
+            "WITH c, " +
+            "     COUNT(pc) AS totalClasses, " +
+            "     SUM(CASE WHEN a.present = true THEN a.kmDriven ELSE 0 END) AS totalKm " +
+            "WHERE totalKm > 0 " +
+            "RETURN c " +
+            "ORDER BY totalKm DESC")
+    List<Candidate> findCandidatesWithKmByInstructor(String instructorId);
+
 }

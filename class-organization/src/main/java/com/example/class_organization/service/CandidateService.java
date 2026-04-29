@@ -119,4 +119,9 @@ public class CandidateService {
     }
 
 
+    public List<Candidate> getCandidatesByInstructorId(String id){
+        return candidateRepository.findCandidatesWithKmByInstructor(id);
+    }
+
+
 }

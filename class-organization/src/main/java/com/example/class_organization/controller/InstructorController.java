@@ -4,6 +4,7 @@ import com.example.class_organization.dto.AddingCandidatesDTO;
 import com.example.class_organization.dto.InstructorDTO;
 import com.example.class_organization.dto.TeachingDTO;
 import com.example.class_organization.model.Candidate;
+import com.example.class_organization.model.Category;
 import com.example.class_organization.model.Instructor;
 import com.example.class_organization.service.InstructorService;
 import org.apache.coyote.Response;
@@ -70,5 +71,17 @@ public class InstructorController {
         return ResponseEntity.badRequest().build();
     }
 
+
+    @GetMapping("/getBest/{id}")
+    public List<Instructor> getBestInstructorsForCandidate(@PathVariable String id) {
+
+
+        return instructorService.getInstructorReccomendations(id);
+    }
+
+    @GetMapping("/bestInst/{min}")
+    public ResponseEntity<List<Instructor>> getBestInst(@PathVariable int min){
+        return ResponseEntity.ok(instructorService.getTopInstructors(min));
+    }
 
 }

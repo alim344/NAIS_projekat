@@ -1,5 +1,6 @@
 package com.example.class_organization.repo;
 
+import com.example.class_organization.model.Category;
 import com.example.class_organization.model.Instructor;
 import com.example.class_organization.model.Teaching;
 import org.springframework.data.neo4j.repository.Neo4jRepository;
@@ -64,5 +65,40 @@ public interface InstructorRepository extends Neo4jRepository<Instructor, Long> 
             "DELETE t " +
             "RETURN count(t)")
     int deleteTrains(String candidateUsername, String instructorUsername);
+
+
+
+
+    @Query("MATCH (c:Candidate)-[:HAS_PREFERENCE]->(tp:TimePreference) " +
+            "WHERE elementId(c) = $candidateId " +
+            "MATCH (otherCandidate:Candidate)-[:HAS_PREFERENCE]->(tp2:TimePreference) " +
+            "WHERE otherCandidate.category = c.category " +
+            "  AND tp2.date = tp.date " +
+            "  AND tp2.startTime <= tp.endTime " +
+            "  AND tp2.endTime >= tp.startTime " +
+            "  AND elementId(otherCandidate) <> elementId(c) " +
+            "MATCH (instructor:Instructor)-[:TRAINS]->(otherCandidate) " +
+            "MATCH (instructor)-[teach:TEACHES]->(pc:PracticalClass) " +
+            "WITH instructor, AVG(teach.score) AS avgScore, " +
+            "     COUNT(DISTINCT otherCandidate) AS sharedCandidates, " +
+            "     COUNT { (instructor)-[:TRAINS]->() } AS currentLoad " +
+            "WHERE avgScore > 3.5 AND currentLoad < instructor.maxCapacity " +
+            "RETURN instructor " +
+            "ORDER BY avgScore DESC")
+    List<Instructor> recommendInstructorsForCandidate(String candidateId);
+
+
+
+    @Query("MATCH (instructor:Instructor)-[teach:TEACHES]->(pc:PracticalClass) " +
+            "WHERE pc.completed = true " +
+            "WITH instructor, " +
+            "     COUNT(pc) AS completedClasses, " +
+            "     AVG(teach.score) AS avgScore " +
+            "WHERE completedClasses >= $minClasses " +
+            "RETURN instructor " +
+            "ORDER BY avgScore DESC")
+    List<Instructor> findTopInstructorsByScore(int minClasses);
+
+
 
 }
