@@ -15,12 +15,13 @@ public interface TheoryLessonRepository extends Neo4jRepository<TheoryLesson, Lo
 
 
     //KOMPLEKSNI UPIT
-    @Query("MATCH (tl:TheoryLesson) +" +
-            "WHERE NOT EXISTS {" +
-            "MATCH (c:Candidate {username: $username})-[:ATTENDED_THEORY {completed: true}]->(:TheoryClass)-[:INSTANCE_OF]->(tl)" +
-            "}" +
-            "WITH tl" +
-            "ORDER BY tl.orderNumber ASC" +
-            "RETURN min(tl)")
+    @Query("MATCH (tl:TheoryLesson) " +
+            "WHERE NOT EXISTS { " +
+            "MATCH (c:Candidate {username: $username})-[:ATTENDED_THEORY {completed: true}]->(:TheoryClass)-[:INSTANCE_OF]->(tl) " +
+            "} " +
+            "WITH tl " +
+            "ORDER BY tl.orderNumber ASC " +
+            "LIMIT 1 " +
+            "RETURN tl")
     Optional<TheoryLesson> findFirstMissingLesson(@Param("username") String username);
 }

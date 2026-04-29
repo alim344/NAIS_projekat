@@ -91,7 +91,8 @@ public class CandidateService {
     }
 
     public void completeAttendance(Long candidateId, Long classId) {
-        candidateRepository.makeTheoryAttendanceCompleted(candidateId, classId);
+        candidateRepository.makeTheoryAttendanceCompleted(candidateId, classId)
+                .orElseThrow(() -> new IllegalArgumentException("Attendance relation not found for candidate " + candidateId + " and class " + classId));
     }
 
     public void unenrollFromClass(Long candidateId, Long classId) {

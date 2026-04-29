@@ -20,37 +20,33 @@ public interface TheoryClassRepository extends Neo4jRepository<TheoryClass, Long
             "MERGE (tc)-[:HELD_IN]->(cr)")
     void createHeldInRelationship(@Param("theoryClassId") Long theoryClassId, @Param("classroomId") Long classroomId);
 
-    @Query("MATCH (tc:TheoryClass) -[r:HELD_IN]->(c:Classroom)" +
-            "WHERE elementId(tc) = $theoryCLassId" +
+    @Query("MATCH (tc:TheoryClass)-[r:HELD_IN]->(c:Classroom) " +
+            "WHERE id(tc) = $theoryClassId " +
             "DELETE r")
     void deleteHeldInRelationship(@Param("theoryClassId") Long theoryClassId);
 
-    @Query("MATCH (tc:TheoryClass), (tl : TheoryLesson)" +
-            "WHERE elementId(tc) = $theoryClassId AND elementId(tl) = $theoryLessonId" +
+    @Query("MATCH (tc:TheoryClass), (tl:TheoryLesson) " +
+            "WHERE id(tc) = $theoryClassId AND id(tl) = $theoryLessonId " +
             "MERGE (tc)-[:INSTANCE_OF]->(tl)")
-    void createInstanceOfRelationship(@Param("theoryClassId") Long theoryClassId, @Param("classroomId") Long classroomId);
+    void createInstanceOfRelationship(@Param("theoryClassId") Long theoryClassId, @Param("theoryLessonId") Long theoryLessonId);
 
-    @Query("MATCH (tc:TheoryClass)-[r:INSTANCE_OF]->(tl:TheoryLesson)" +
-            "WHERE elementId(tc) = $TheoryClassId" +
+    @Query("MATCH (tc:TheoryClass)-[r:INSTANCE_OF]->(tl:TheoryLesson) " +
+            "WHERE id(tc) = $theoryClassId " +
             "DELETE r")
     void deleteInstanceOfRelationship(@Param("theoryClassId") Long theoryClassId);
 
-    //KOMPLEKSNI UPIT
-    @Query("MATCH (tc:TheoryClass)-[:HELD_IN]->(cr:Classroom)" +
-            "MATCH (cand:Candidate)-[:ATTENDED_THEORY]->(tc)" +
+    @Query("MATCH (tc:TheoryClass)-[:HELD_IN]->(cr:Classroom) " +
+            "OPTIONAL MATCH (cand:Candidate)-[:ATTENDED_THEORY]->(tc) " +
             "WITH tc, cr, count(cand) AS candidateCount " +
-            "WHERE candidateCount > cr.capacity" +
+            "WHERE candidateCount > cr.capacity " +
             "RETURN tc")
     List<TheoryClass> findOverbookedClasses();
 
-    //KOMPLEKSNI UPIT
-    @Query("MATCH (cr:Classroom)"  +
-            "WHERE NOT EXISTS {" +
-            "MATCH (tc:TheoryClass)-[:HELD_IN]->(cr)"+
-            "WHERE tc.startTime <= $targetTime AND tc.endTime > $targetTime"+
-            "}"+
-            "WITH cr, count(cr) as availableFlag" +
-            "WHERE availableFlag > 0" +
+    @Query("MATCH (cr:Classroom) " +
+            "OPTIONAL MATCH (tc:TheoryClass)-[:HELD_IN]->(cr) " +
+            "WHERE tc.startTime <= $targetTime AND tc.endTime > $targetTime " +
+            "WITH cr, count(tc) AS conflictCount " +
+            "WHERE conflictCount = 0 " +
             "RETURN cr")
     List<Classroom> findAvailableClassrooms(@Param("targetTime") LocalDateTime targetTime);
 }
