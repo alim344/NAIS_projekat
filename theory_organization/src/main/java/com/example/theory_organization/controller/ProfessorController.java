@@ -21,6 +21,18 @@ public class ProfessorController {
         return ResponseEntity.ok(professorService.save(professor));
     }
 
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Professor> update(@PathVariable Long id, @RequestBody Professor details) {
+        return ResponseEntity.ok(professorService.update(id, details));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> delete(@PathVariable Long id) {
+        professorService.delete(id);
+        return ResponseEntity.ok("Profesor sa ID-em " + id + " je uspesno obrisan.");
+    }
+
     @PostMapping("/{profId}/assign-to-class/{classId}")
     public ResponseEntity<String> assign(@PathVariable Long profId, @PathVariable Long classId) {
         professorService.assignToClass(profId, classId);

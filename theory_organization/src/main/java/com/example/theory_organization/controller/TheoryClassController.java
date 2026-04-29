@@ -31,6 +31,18 @@ public class TheoryClassController {
         return ResponseEntity.ok("Sala i lekcija povezane).");
     }
 
+
+    @PutMapping("/{id}")
+    public ResponseEntity<TheoryClass> update(@PathVariable Long id, @RequestBody TheoryClass details) {
+        return ResponseEntity.ok(theoryClassService.update(id, details));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> delete(@PathVariable Long id) {
+        theoryClassService.delete(id);
+        return ResponseEntity.ok("Teorijski cas je otkazan/obrisan.");
+    }
+    
     @GetMapping("/overbooked")
     public List<TheoryClass> getOverbooked() {
         return theoryClassService.findOverbooked();

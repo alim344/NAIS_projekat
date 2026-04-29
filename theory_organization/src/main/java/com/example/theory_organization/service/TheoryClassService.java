@@ -55,6 +55,10 @@ public class TheoryClassService {
         return theoryClassRepository.save(existing);
     }
 
+    public void delete(Long id) {
+        theoryClassRepository.deleteById(id);
+    }
+
     public void setClassHall(Long classId, Long hallId) {
         theoryClassRepository.createHeldInRelationship(classId, hallId);
     }
