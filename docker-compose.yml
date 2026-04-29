@@ -1,7 +1,6 @@
 version: '3.8'
 
 services:
-  #  MILA: BAZA
   neo4j-mila:
     image: neo4j:latest
     container_name: neo4j-mila
@@ -11,12 +10,10 @@ services:
     environment:
       - NEO4J_AUTH=neo4j/password123
     volumes:
-      - ./neo4j_data:/data
-      - ./neo4j_logs:/logs
+      - ./neo4j_mila_data:/data
     networks:
       - autoskola-network
 
-  #  MILA: Class Organization
   class-organization:
     build:
       context: ./class-organization
@@ -27,12 +24,39 @@ services:
       - SPRING_NEO4J_URI=bolt://neo4j-mila:7687
       - SPRING_NEO4J_AUTHENTICATION_USERNAME=neo4j
       - SPRING_NEO4J_AUTHENTICATION_PASSWORD=password123
-      - SERVER_PORT=8080
     depends_on:
       - neo4j-mila
     networks:
       - autoskola-network
 
+  neo4j-sara:
+    image: neo4j:latest
+    container_name: neo4j-sara
+    ports:
+      - "7480:7474"
+      - "7690:7687"
+    environment:
+      - NEO4J_AUTH=neo4j/sara123!
+    volumes:
+      - ./neo4j_sara_data:/data
+    networks:
+      - autoskola-network
+
+  theory-organization:
+    build:
+      context: ./theory_organization
+    container_name: theory-organization-service
+    ports:
+      - "8090:8090"
+    environment:
+      - SPRING_NEO4J_URI=bolt://neo4j-sara:7687
+      - SPRING_NEO4J_AUTHENTICATION_USERNAME=neo4j
+      - SPRING_NEO4J_AUTHENTICATION_PASSWORD=sara123!
+      - SERVER_PORT=8090
+    depends_on:
+      - neo4j-sara
+    networks:
+      - autoskola-network
 
 networks:
   autoskola-network:

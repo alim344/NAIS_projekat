@@ -11,16 +11,15 @@ import java.util.Map;
 
 @Repository
 public interface ProfessorRepository extends Neo4jRepository<Professor, Long> {
-    @Query("MATCH (p : Professor), (tc : TheoryClass)" +
-            "WHERE elementId(p) = $professorId AND elementId(tc) = $TheoryClass " +
+    @Query("MATCH (p:Professor), (tc:TheoryClass) " +
+            "WHERE id(p) = $professorId AND id(tc) = $theoryClassId " +
             "MERGE (p)-[:LECTURES]->(tc)")
-    void createLecturesRelationship(@Param("professorId") Long professorId, @Param("TheoryClassId") Long theoryClassId);
+    void createLecturesRelationship(@Param("professorId") Long professorId, @Param("theoryClassId") Long theoryClassId);
 
-    @Query("MATCH (p:Professor)-[r:LECTURES]->(tc:TheoryClass)" +
-            "WHERE elementId($professorId)= $professorId AND elementId(tc) = $theoryClassId" +
+    @Query("MATCH (p:Professor)-[r:LECTURES]->(tc:TheoryClass) " +
+            "WHERE id(p) = $professorId AND id(tc) = $theoryClassId " +
             "DELETE r")
     void deleteLecturesRelationship(@Param("professorId") Long professorId, @Param("theoryClassId") Long theoryClassId);
-
 
     //KOMPLEKSNI UPIT
     @Query("MATCH (p:Professor)-[:LECTURES]->(tc:TheoryClass)" +
