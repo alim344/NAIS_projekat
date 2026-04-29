@@ -9,11 +9,11 @@ import java.util.Map;
 
 public interface InstructorDocumentsRepository extends Neo4jRepository<InstructorDocuments, String> {
 
-    //complex
+    /*
     @Query("MATCH (d:InstructorDocuments)" +
             "WHERE d.expiryDate <= date() + duration({days:60})" +
             "WITH d.documentType AS type, COUNT(d) AS documentCount" +
             "WHERE type, documentCount" +
             "ORDER BY documentCount DESC")
-    List<Map<String, Object>> countExpiringDocumentsByType();
+    List<Map<String, Object>> countExpiringDocumentsByType(); */
 }
