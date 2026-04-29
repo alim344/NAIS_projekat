@@ -1,21 +1,22 @@
-package model;
+package com.example.instructor_management.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.springframework.data.neo4j.core.schema.GeneratedValue;
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
+import org.springframework.data.neo4j.core.schema.Property;
 
 import java.time.LocalDate;
 
 @Data
 @AllArgsConstructor
-@Node("documents")
+@Node("Document")
 public class InstructorDocuments {
 
     @Id
     @GeneratedValue
-    private Long id;
+    private String id;
 
     private String documentType;
 

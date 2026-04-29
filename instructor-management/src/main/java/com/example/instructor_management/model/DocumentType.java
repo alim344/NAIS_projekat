@@ -1,4 +1,4 @@
-package model;
+package com.example.instructor_management.model;
 
 public enum DocumentType {
     DRIVING_LICENSE,
