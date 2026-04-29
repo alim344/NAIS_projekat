@@ -5,6 +5,7 @@ import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
 
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 @Node("PracticalClass")
 public class PracticalClass {
@@ -14,9 +15,9 @@ public class PracticalClass {
     @GeneratedValue
     private Long id;
 
-    private LocalDateTime startTime;
+    private String startTime;
 
-    private LocalDateTime endTime;
+    private String endTime;
 
     private boolean completed;
 
@@ -28,19 +29,19 @@ public class PracticalClass {
         this.id = id;
     }
 
-    public LocalDateTime getStartTime() {
+    public String getStartTime() {
         return startTime;
     }
 
-    public void setStartTime(LocalDateTime startTime) {
+    public void setStartTime(String startTime) {
         this.startTime = startTime;
     }
 
-    public LocalDateTime getEndTime() {
+    public String getEndTime() {
         return endTime;
     }
 
-    public void setEndTime(LocalDateTime endTime) {
+    public void setEndTime(String endTime) {
         this.endTime = endTime;
     }
 
@@ -50,5 +51,32 @@ public class PracticalClass {
 
     public void setCompleted(boolean completed) {
         this.completed = completed;
+    }
+
+
+    public LocalDateTime getStartTimeAsDateTime() {
+        if (this.startTime == null) return null;
+        return LocalDateTime.parse(this.startTime.replace("Z", ""));
+    }
+
+    public void setStartTimeFromDateTime(LocalDateTime dateTime) {
+        if (dateTime == null) {
+            this.startTime = null;
+        } else {
+            this.startTime = dateTime.toString();
+        }
+    }
+
+    public LocalDateTime getEndTimeAsDateTime() {
+        if (this.endTime == null) return null;
+        return LocalDateTime.parse(this.endTime.replace("Z", ""));
+    }
+
+    public void setEndTimeFromDateTime(LocalDateTime dateTime) {
+        if (dateTime == null) {
+            this.endTime = null;
+        } else {
+            this.endTime = dateTime.toString();
+        }
     }
 }

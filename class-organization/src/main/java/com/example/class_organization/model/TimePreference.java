@@ -6,6 +6,7 @@ import org.springframework.data.neo4j.core.schema.Node;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.OffsetTime;
 
 @Node("TimePreference")
 public class TimePreference {
@@ -14,8 +15,10 @@ public class TimePreference {
     @GeneratedValue
     private Long id;
 
-    private LocalDate date;
-    private LocalTime startTime;
-    private LocalTime endTime;
+    private String date;
+    private String startTime;
+    private String endTime;
+
+
 
 }

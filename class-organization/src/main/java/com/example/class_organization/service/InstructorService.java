@@ -12,6 +12,13 @@ public class InstructorService {
     @Autowired
     private InstructorRepository instructorRepository;
 
+
+
+
+
+
+
+
     public void createTeaching(String username, Long classId){
 
         try{
@@ -25,5 +32,22 @@ public class InstructorService {
         }catch(DataAccessException e){
             System.out.println("Greska u bayu"+e.getMessage());
         }
+    }
+
+
+    public void updateTeaching(String username, String classId, int score, String note){
+        try{
+
+            int i = instructorRepository.updateTeaches(username,classId,score,note);
+
+            if(i == 0){
+                throw new RuntimeException("Nije pronađen čas: ");
+            }
+
+        }catch(DataAccessException e){
+            System.out.println("Greska u bayu"+e.getMessage());
+        }
+
+
     }
 }

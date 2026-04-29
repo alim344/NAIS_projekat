@@ -15,7 +15,7 @@ public class Vehicle {
 
     private String registrationNumber;
 
-    private LocalDate registrationExpiryDate;
+
 
 
     private VehicleStatus status;
