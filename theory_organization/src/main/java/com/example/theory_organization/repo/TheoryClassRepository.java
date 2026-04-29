@@ -36,14 +36,14 @@ public interface TheoryClassRepository extends Neo4jRepository<TheoryClass, Long
     void deleteInstanceOfRelationship(@Param("theoryClassId") Long theoryClassId);
 
     @Query("MATCH (tc:TheoryClass)-[:HELD_IN]->(cr:Classroom) " +
-            "OPTIONAL MATCH (cand:Candidate)-[:ATTENDED_THEORY]->(tc) " +
+            "MATCH (cand:Candidate)-[:ATTENDED_THEORY]->(tc) " +
             "WITH tc, cr, count(cand) AS candidateCount " +
             "WHERE candidateCount > cr.capacity " +
             "RETURN tc")
     List<TheoryClass> findOverbookedClasses();
 
     @Query("MATCH (cr:Classroom) " +
-            "OPTIONAL MATCH (tc:TheoryClass)-[:HELD_IN]->(cr) " +
+            "MATCH (tc:TheoryClass)-[:HELD_IN]->(cr) " +
             "WHERE tc.startTime <= $targetTime AND tc.endTime > $targetTime " +
             "WITH cr, count(tc) AS conflictCount " +
             "WHERE conflictCount = 0 " +
