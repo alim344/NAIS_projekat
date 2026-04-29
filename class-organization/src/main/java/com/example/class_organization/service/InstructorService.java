@@ -1,10 +1,14 @@
 package com.example.class_organization.service;
 
+import com.example.class_organization.dto.AddingCandidatesDTO;
+import com.example.class_organization.dto.InstructorDTO;
 import com.example.class_organization.model.Instructor;
 import com.example.class_organization.repo.InstructorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class InstructorService {
@@ -14,7 +18,40 @@ public class InstructorService {
 
 
 
+    public Instructor registerInstructor(InstructorDTO dto){
 
+        Instructor instructor = new Instructor();
+        instructor.setName(dto.getName());
+        instructor.setEmail(dto.getEmail());
+        instructor.setLastname(dto.getLastname());
+        instructor.setPassword(dto.getPassword());
+        instructor.setUsername(dto.getUsername());
+        return instructorRepository.save(instructor);
+
+    }
+
+    public List<Instructor> getAll(){
+        return instructorRepository.findAll();
+    }
+
+
+    public int deleteInstructor(String id){
+        return instructorRepository.deleteInstructor(id);
+    }
+
+    public int addCandidate(AddingCandidatesDTO dto){
+        String candidateUsername = dto.getC_username();
+        String instructorUsername = dto.getI_username();
+        return instructorRepository.createTrains(candidateUsername, instructorUsername);
+
+
+    }
+
+    public int deleteCandidate(AddingCandidatesDTO dto){
+        String candidateUsername = dto.getC_username();
+        String instructorUsername = dto.getI_username();
+        return instructorRepository.deleteTrains(candidateUsername, instructorUsername);
+    }
 
 
 

@@ -114,5 +114,9 @@ public class CandidateService {
     }
 
 
+    public void makeHasPref(String username,Long timeprefId){
+        candidateRepository.createHasPreference(username, timeprefId);
+    }
+
 
 }

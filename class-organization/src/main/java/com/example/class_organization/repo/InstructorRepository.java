@@ -10,6 +10,11 @@ import java.util.List;
 public interface InstructorRepository extends Neo4jRepository<Instructor, Long> {
 
 
+    @Query("MATCH (i:Instructor) WHERE elementId(i) = $id " +
+            "DETACH DELETE i " +
+            "RETURN count(*)")
+    int deleteInstructor(String id);
+
     //TEACHES
 
     @Query("MATCH (i:Instructor {username: $username}),(pc:PracticalClass) " +
@@ -55,9 +60,9 @@ public interface InstructorRepository extends Neo4jRepository<Instructor, Long> 
     int createTrains(String candidateUsername,String instructorUsername);
 
 
-    @Query("MATCH (:Candidate {username:$candidateUsername}) -[t:TEACHES]->(:Instructor {username: $instructorUsername}) " +
+    @Query("MATCH (:Instructor {username: $instructorUsername})-[t:TRAINS]->(:Candidate {username: $candidateUsername}) " +
             "DELETE t " +
-            "RETURN count(*)")
-    int deleteTrains(String candidateUsername,String instructorUsername);
+            "RETURN count(t)")
+    int deleteTrains(String candidateUsername, String instructorUsername);
 
 }
