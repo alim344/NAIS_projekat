@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -37,10 +38,14 @@ public class InstructorService {
     }
 
     @Transactional
-    public void assignVehicleToInstructor(String instructorId, String vehicleId) {
-        instructorRepository.assignVehicleToInstructor(instructorId, vehicleId);
+    public void assignVehicleToInstructor(String instructorId, String vehicleId, Integer mileageAtAssignment) {
+        instructorRepository.assignVehicleToInstructor(
+                instructorId,
+                vehicleId,
+                LocalDate.now(),
+                mileageAtAssignment
+        );
     }
-
     @Transactional
     public void assignCandidateToInstructor(String instructorId, String candidateId, String status) {
         instructorRepository.assignCandidateToInstructor(instructorId, candidateId, status);

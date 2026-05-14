@@ -73,8 +73,9 @@ public class InstructorController {
     @PostMapping("/{instructorId}/vehicles/{vehicleId}")
     public ResponseEntity<Void> assignVehicleToInstructor(
             @PathVariable String instructorId,
-            @PathVariable String vehicleId) {
-        instructorService.assignVehicleToInstructor(instructorId, vehicleId);
+            @PathVariable String vehicleId,
+            @RequestParam Integer mileageAtAssignment) {
+        instructorService.assignVehicleToInstructor(instructorId, vehicleId, mileageAtAssignment);
         return ResponseEntity.ok().build();
     }
 
