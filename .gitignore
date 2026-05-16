@@ -29,6 +29,8 @@ neo4j_data/
 neo4j_logs/
 neo4j_mila_data/
 neo4j_sara_data/
+neo4j_data_tanja/
+neo4j_logs_tanja/
 transactions/
 data/
 # IntelliJ & IDE
