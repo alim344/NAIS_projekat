@@ -1,5 +1,6 @@
 package com.example.theory_organization.service;
 
+import com.example.theory_organization.dto.ProfessorStatsDTO;
 import com.example.theory_organization.model.Professor;
 import com.example.theory_organization.repo.ProfessorRepository;
 import lombok.RequiredArgsConstructor;
@@ -52,7 +53,7 @@ public class ProfessorService {
         professorRepository.deleteLecturesRelationship(professorId, classId);
     }
 
-    public List<Map<String, Object>> getStats() {
+    public List<ProfessorStatsDTO> getStats() {
         return professorRepository.getProfessorStats();
     }
 }

@@ -1,5 +1,6 @@
 package com.example.theory_organization.repo;
 
+import com.example.theory_organization.dto.ProfessorStatsDTO;
 import com.example.theory_organization.model.Professor;
 import org.springframework.data.neo4j.repository.Neo4jRepository;
 import org.springframework.data.neo4j.repository.query.Query;
@@ -25,9 +26,9 @@ public interface ProfessorRepository extends Neo4jRepository<Professor, Long> {
     //KOMPLEKSNI UPIT
     @Query("MATCH (p:Professor)-[:LECTURES]->(tc:TheoryClass) " +
             "WHERE p.academicTitle IS NOT NULL " +
-            "WITH p, sum(duration(tc.startTime, tc.endTime).minutes) AS totalMin " +
+            "WITH p, sum(duration.between(tc.startTime, tc.endTime).minutes) AS totalMin " +
             "WHERE totalMin > 0 " +
             "RETURN p.name AS name, p.lastname AS lastname, p.academicTitle AS academicTitle, totalMin " +
             "ORDER BY totalMin DESC")
-    List<Map<String, Object>> getProfessorStats();
+    List<ProfessorStatsDTO> getProfessorStats();
 }

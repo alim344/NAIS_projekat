@@ -1,5 +1,6 @@
 package com.example.theory_organization.controller;
 
+import com.example.theory_organization.dto.ProfessorStatsDTO;
 import com.example.theory_organization.model.Professor;
 import com.example.theory_organization.service.ProfessorService;
 import lombok.RequiredArgsConstructor;
@@ -41,7 +42,7 @@ public class ProfessorController {
 
 
     @GetMapping("/teaching-stats")
-    public List<Map<String, Object>> getStats() {
+    public List<ProfessorStatsDTO> getStats() {
         return professorService.getStats();
     }
 }
