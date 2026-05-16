@@ -15,8 +15,8 @@ import java.util.List;
 @Repository
 public interface TheoryClassRepository extends Neo4jRepository<TheoryClass, Long> {
 
-    @Query("MATCH (tc : TheoryClass), (cr: Classroom)" +
-           "WHERE elementId(tc) = $theoryClassId AND elementId(cr) = $classroomId" +
+    @Query("MATCH (tc:TheoryClass), (cr:Classroom) " +
+            "WHERE id(tc) = $theoryClassId AND id(cr) = $classroomId " +
             "MERGE (tc)-[:HELD_IN]->(cr)")
     void createHeldInRelationship(@Param("theoryClassId") Long theoryClassId, @Param("classroomId") Long classroomId);
 

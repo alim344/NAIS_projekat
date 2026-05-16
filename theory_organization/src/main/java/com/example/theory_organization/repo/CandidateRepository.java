@@ -22,8 +22,8 @@ public interface CandidateRepository extends Neo4jRepository<Candidate, Long> {
     @Query("MATCH (c:Candidate)-[r:ATTENDED_THEORY]->(tc:TheoryClass) " +
             "WHERE id(c) = $candidateId AND id(tc) = $theoryClassId " +
             "SET r.completed = true, r.arrivalTime = localdatetime() " +
-            "RETURN c")
-    Optional<Candidate> makeTheoryAttendanceCompleted(@Param("candidateId") Long candidateId, @Param("theoryClassId") Long theoryClassId);
+            "RETURN count(r) > 0")
+    Optional<Boolean> makeTheoryAttendanceCompleted(@Param("candidateId") Long candidateId, @Param("theoryClassId") Long theoryClassId);
 
     @Query("MATCH (c:Candidate)-[r:ATTENDED_THEORY]->(tc:TheoryClass) " +
             "WHERE id(c) = $candidateId AND id(tc) = $theoryClassId " +
