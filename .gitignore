@@ -27,6 +27,8 @@ replay_pid*
 # Neo4j Database files
 neo4j_data/
 neo4j_logs/
+neo4j_mila_data/
+neo4j_sara_data/
 transactions/
 data/
 # IntelliJ & IDE
