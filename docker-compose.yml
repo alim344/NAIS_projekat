@@ -91,7 +91,7 @@ services:
       - autoskola-network
 
 
-  #TANJA: ellasticsearch
+  #TANJA: elasticsearch
   elasticsearch-instructor:
     image: elasticsearch:8.12.0
     container_name: elasticsearch-instructor
@@ -102,7 +102,7 @@ services:
     ports:
       - "9200:9200"
     volumes:
-      - ./elasticsearch_tanja_data:/usr/share/elasticsearch/data
+      - ./elasticsearch_instructor_data:/usr/share/elasticsearch/data
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
       interval: 10s
