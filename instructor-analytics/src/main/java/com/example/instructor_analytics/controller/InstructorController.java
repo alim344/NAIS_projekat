@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -43,5 +44,11 @@ public class InstructorController {
     public ResponseEntity<Void> delete(@PathVariable String id) {
         instructorService.deleteInstructor(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/available-by-category")
+    public ResponseEntity<Map<String, Object>> getAvailableByCategory(
+            @RequestParam String category) {
+        return ResponseEntity.ok(instructorService.getInstructorsWithAvailableSpotsByCategory(category));
     }
 }
