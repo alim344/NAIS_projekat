@@ -24,11 +24,12 @@ hs_err_pid*
 replay_pid*
 
 
-# Neo4j Database files (OBVEZNO)
+
+# Neo4j Database files
 neo4j_data/
+neo4j_logs/
 transactions/
 data/
-
 # IntelliJ & IDE
 .idea/
 *.iml

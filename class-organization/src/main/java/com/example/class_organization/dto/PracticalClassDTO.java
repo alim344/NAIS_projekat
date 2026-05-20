@@ -1,18 +1,8 @@
-package com.example.class_organization.model;
-
-import org.springframework.data.neo4j.core.schema.GeneratedValue;
-import org.springframework.data.neo4j.core.schema.Id;
-import org.springframework.data.neo4j.core.schema.Node;
+package com.example.class_organization.dto;
 
 import java.time.LocalDateTime;
 
-@Node("PracticalClass")
-public class PracticalClass {
-
-
-    @Id
-    @GeneratedValue
-    private Long id;
+public class PracticalClassDTO {
 
     private LocalDateTime startTime;
 
@@ -20,13 +10,11 @@ public class PracticalClass {
 
     private boolean completed;
 
-    public Long getId() {
-        return id;
-    }
+    private String candidate_username;
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+
+    private String instructor_username;
+
 
     public LocalDateTime getStartTime() {
         return startTime;
@@ -50,5 +38,21 @@ public class PracticalClass {
 
     public void setCompleted(boolean completed) {
         this.completed = completed;
+    }
+
+    public String getCandidate_username() {
+        return candidate_username;
+    }
+
+    public void setCandidate_username(String candidate_username) {
+        this.candidate_username = candidate_username;
+    }
+
+    public String getInstructor_username() {
+        return instructor_username;
+    }
+
+    public void setInstructor_username(String instructor_username) {
+        this.instructor_username = instructor_username;
     }
 }
