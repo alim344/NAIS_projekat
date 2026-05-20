@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -44,5 +45,12 @@ public class VehicleController {
     public ResponseEntity<Void> delete(@PathVariable String id) {
         vehicleService.deleteVehicle(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/expiring-registration")
+    public ResponseEntity<Map<String, Object>> getExpiringRegistration(
+            @RequestParam int daysAhead,
+            @RequestParam(required = false) String status) {
+        return ResponseEntity.ok(vehicleService.getVehiclesByExpiringRegistration(daysAhead, status));
     }
 }
