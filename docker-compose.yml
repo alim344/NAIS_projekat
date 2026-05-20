@@ -90,6 +90,43 @@ services:
     networks:
       - autoskola-network
 
+
+  #TANJA: ellasticsearch
+  elasticsearch-instructor:
+    image: elasticsearch:8.12.0
+    container_name: elasticsearch-instructor
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    volumes:
+      - ./elasticsearch_tanja_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - autoskola-network
+
+  #TANJA: instructor analytics
+  instructor-analytics:
+    build: ./instructor-analytics
+    container_name: instructor-analytics-service
+    ports:
+      - "9090:9090"
+    environment:
+      - SPRING_ELASTICSEARCH_URIS=http://elasticsearch-instructor:9200
+      - SERVER_PORT=9090
+    depends_on:
+      elasticsearch-instructor:
+        condition: service_healthy
+    restart: on-failure
+    networks:
+      - autoskola-network
+
 networks:
   autoskola-network:
     driver: bridge
