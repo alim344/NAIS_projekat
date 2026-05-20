@@ -16,7 +16,7 @@ public class VehicleAssignment {
     @TargetNode
     private Vehicle vehicle;
 
-    private LocalDateTime assignedDate; // Kada je dobio auto
+
     private Integer startMileage;       // Km kad je dobio kola
     private boolean primary;        //da li je njgovo ili zamensko
 
@@ -36,13 +36,7 @@ public class VehicleAssignment {
         this.vehicle = vehicle;
     }
 
-    public LocalDateTime getAssignedDate() {
-        return assignedDate;
-    }
 
-    public void setAssignedDate(LocalDateTime assignedDate) {
-        this.assignedDate = assignedDate;
-    }
 
     public Integer getStartMileage() {
         return startMileage;

@@ -13,7 +13,7 @@ public class Attendance {
     @TargetNode
     private PracticalClass practicalClass;
 
-    private boolean present;
+    private Boolean present;
 
     private Integer kmDriven;
 
@@ -33,7 +33,7 @@ public class Attendance {
         this.kmDriven = kmDriven;
     }
 
-    public boolean isPresent() {
+    public Boolean isPresent() {
         return present;
     }
 
