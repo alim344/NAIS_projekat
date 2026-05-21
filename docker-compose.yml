@@ -119,11 +119,23 @@ services:
       - "9090:9090"
     environment:
       - SPRING_ELASTICSEARCH_URIS=http://elasticsearch-instructor:9200
+      - SPRING_DATA_REDIS_HOST=redis-tanja
+      - SPRING_DATA_REDIS_PORT=6379
       - SERVER_PORT=9090
     depends_on:
       elasticsearch-instructor:
         condition: service_healthy
+      redis-tanja:
+        condition: service_started
     restart: on-failure
+    networks:
+      - autoskola-network
+
+  redis-tanja:
+    image: redis:latest
+    container_name: redis-tanja
+    ports:
+      - "6379:6379"
     networks:
       - autoskola-network
 

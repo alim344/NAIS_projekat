@@ -57,7 +57,7 @@ public class VehicleController {
 
     @GetMapping("/statistics/by-brand")
     public Map<String, Object> getVehicleStatisticsByBrand(
-            @RequestParam String brand,  // ← OBAVEZAN parametar
+            @RequestParam String brand,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) Integer minMileage) {
 

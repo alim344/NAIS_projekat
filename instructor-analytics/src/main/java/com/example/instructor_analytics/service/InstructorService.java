@@ -26,6 +26,7 @@ public class InstructorService {
     private final InstructorRepository instructorRepository;
 
     private final ElasticsearchOperations elasticsearchOperations;
+    private final RedisCacheService redisCacheService;
 
     public InstructorDocument saveInstructor(InstructorDocument instructor) {
         return instructorRepository.save(instructor);
@@ -66,6 +67,13 @@ public class InstructorService {
             String category,
             String searchText,
             int maxResults) {
+
+        String cacheKey = "instructors:available:category:" + (category != null ? category : "all") + ":text:" + (searchText != null ? searchText : "none");
+        Object cached = redisCacheService.get(cacheKey);
+        if (cached != null) {
+            System.out.println("Podaci preuzeti iz Redis kesa: " + cacheKey);
+            return (Map<String, Object>) cached;
+        }
 
         List<Query> mustQueries = new ArrayList<>();
 
@@ -146,6 +154,9 @@ public class InstructorService {
         response.put("totalFreeSpotsAggregation", totalFreeSpots);
         response.put("totalInstructorsFound", instructors.size());
         response.put("instructors", instructors);
+
+        redisCacheService.save(cacheKey, response, 10);
+        System.out.println("Podaci sacuvani u Redis kes: " + cacheKey);
 
         return response;
     }
