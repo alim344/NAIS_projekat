@@ -80,4 +80,42 @@ public class VehicleService {
 
         return result;
     }
+
+    public Map<String, Object> searchVehiclesByBrandAndStatus(String brand, String status) {
+        Criteria criteria = new Criteria("brand").matches(brand);
+
+        if (status != null && !status.isEmpty()) {
+            criteria = criteria.and(new Criteria("status").is(status));
+        }
+
+        CriteriaQuery query = new CriteriaQuery(criteria);
+        query.addSort(Sort.by(Sort.Direction.DESC, "currentMileage"));
+
+        SearchHits<VehicleDocument> hits = elasticsearchOperations.search(query, VehicleDocument.class);
+
+        List<VehicleDocument> vehicles = hits.getSearchHits().stream()
+                .map(SearchHit::getContent)
+                .collect(Collectors.toList());
+
+        double avgMileage = vehicles.stream()
+                .mapToInt(VehicleDocument::getCurrentMileage)
+                .average()
+                .orElse(0);
+
+        Map<String, Double> avgMileageByBrand = vehicles.stream()
+                .collect(Collectors.groupingBy(
+                        VehicleDocument::getBrand,
+                        Collectors.averagingInt(VehicleDocument::getCurrentMileage)
+                ));
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("searchTerm", brand);
+        result.put("statusFilter", status);
+        result.put("totalFound", vehicles.size());
+        result.put("averageMileage", Math.round(avgMileage));
+        result.put("avgMileageByBrand", avgMileageByBrand);
+        result.put("vehicles", vehicles);
+
+        return result;
+    }
 }

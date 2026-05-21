@@ -51,4 +51,5 @@ public class InstructorController {
             @RequestParam String category) {
         return ResponseEntity.ok(instructorService.getInstructorsWithAvailableSpotsByCategory(category));
     }
+
 }

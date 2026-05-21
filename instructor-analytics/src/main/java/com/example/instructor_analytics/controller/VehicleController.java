@@ -53,4 +53,11 @@ public class VehicleController {
             @RequestParam(required = false) String status) {
         return ResponseEntity.ok(vehicleService.getVehiclesByExpiringRegistration(daysAhead, status));
     }
+
+    @GetMapping("/search-by-brand")
+    public ResponseEntity<Map<String, Object>> searchByBrand(
+            @RequestParam String brand,
+            @RequestParam(required = false) String status) {
+        return ResponseEntity.ok(vehicleService.searchVehiclesByBrandAndStatus(brand, status));
+    }
 }
