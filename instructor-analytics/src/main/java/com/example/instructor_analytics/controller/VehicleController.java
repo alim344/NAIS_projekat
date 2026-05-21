@@ -48,10 +48,11 @@ public class VehicleController {
     }
 
     @GetMapping("/expiring-registration")
-    public ResponseEntity<Map<String, Object>> getExpiringRegistration(
+    public Map<String, Object> getVehiclesWithExpiringRegistration(
             @RequestParam int daysAhead,
             @RequestParam(required = false) String status) {
-        return ResponseEntity.ok(vehicleService.getVehiclesByExpiringRegistration(daysAhead, status));
+
+        return vehicleService.findVehiclesWithExpiringRegistration(daysAhead, status);
     }
 
     @GetMapping("/search-by-brand")

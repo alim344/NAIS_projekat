@@ -4,13 +4,9 @@ import com.example.instructor_analytics.model.InstructorDocument;
 import com.example.instructor_analytics.repository.InstructorRepository;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
-import org.springframework.data.elasticsearch.core.query.Criteria;
-import org.springframework.data.elasticsearch.core.query.CriteriaQuery;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;

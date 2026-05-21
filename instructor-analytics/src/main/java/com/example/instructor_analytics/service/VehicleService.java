@@ -12,10 +12,8 @@ import org.springframework.data.elasticsearch.core.query.CriteriaQuery;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -25,6 +23,8 @@ public class VehicleService {
 
     private final VehicleRepository vehicleRepository;
     private final ElasticsearchOperations elasticsearchOperations;
+
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     public VehicleDocument saveVehicle(VehicleDocument vehicle) {
         return vehicleRepository.save(vehicle);
@@ -80,42 +80,71 @@ public class VehicleService {
 
         return result;
     }
+    
+    /**
+     * COMPLEX QUERY 2:
+     * Vozila kojima registracija istice u narednih X dana
+     * + filtriranje po statusu
+     * + sortiranje po datumu isteka (rastuce)
+     * + agregacija: broj vozila po statusu
+     */
+    public Map<String, Object> findVehiclesWithExpiringRegistration(
+            int daysAhead,
+            String status) {
 
-    public Map<String, Object> searchVehiclesByBrandAndStatus(String brand, String status) {
-        Criteria criteria = new Criteria("brand").matches(brand);
+        String today = LocalDate.now().format(DATE_FORMATTER);
+        String futureDate = LocalDate.now().plusDays(daysAhead).format(DATE_FORMATTER);
+
+        Criteria criteria = new Criteria("registrationExpiryDate")
+                .greaterThanEqual(today)
+                .lessThanEqual(futureDate);
 
         if (status != null && !status.isEmpty()) {
-            criteria = criteria.and(new Criteria("status").is(status));
+            criteria = criteria.and(new Criteria("status")).is(status);
         }
 
         CriteriaQuery query = new CriteriaQuery(criteria);
-        query.addSort(Sort.by(Sort.Direction.DESC, "currentMileage"));
+        query.setMaxResults(1000);
 
-        SearchHits<VehicleDocument> hits = elasticsearchOperations.search(query, VehicleDocument.class);
+        SearchHits<VehicleDocument> searchHits = elasticsearchOperations.search(
+                query, VehicleDocument.class
+        );
 
-        List<VehicleDocument> vehicles = hits.getSearchHits().stream()
+        List<VehicleDocument> vehicles = searchHits.getSearchHits().stream()
                 .map(SearchHit::getContent)
                 .collect(Collectors.toList());
 
-        double avgMileage = vehicles.stream()
-                .mapToInt(VehicleDocument::getCurrentMileage)
-                .average()
-                .orElse(0);
+        vehicles.sort(Comparator.comparing(VehicleDocument::getRegistrationExpiryDate));
 
-        Map<String, Double> avgMileageByBrand = vehicles.stream()
+        Map<String, Long> countByStatus = vehicles.stream()
                 .collect(Collectors.groupingBy(
-                        VehicleDocument::getBrand,
-                        Collectors.averagingInt(VehicleDocument::getCurrentMileage)
+                        VehicleDocument::getStatus,
+                        Collectors.counting()
                 ));
 
-        Map<String, Object> result = new HashMap<>();
-        result.put("searchTerm", brand);
-        result.put("statusFilter", status);
-        result.put("totalFound", vehicles.size());
-        result.put("averageMileage", Math.round(avgMileage));
-        result.put("avgMileageByBrand", avgMileageByBrand);
-        result.put("vehicles", vehicles);
+        List<Map<String, Object>> vehicleList = vehicles.stream()
+                .map(v -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("id", v.getId());
+                    map.put("registrationNumber", v.getRegistrationNumber());
+                    map.put("brand", v.getBrand());
+                    map.put("status", v.getStatus());
+                    map.put("currentMileage", v.getCurrentMileage());
+                    map.put("registrationExpiryDate", v.getRegistrationExpiryDate());
+                    map.put("instructorName", v.getInstructorName());
+                    map.put("instructorLastname", v.getInstructorLastname());
+                    return map;
+                })
+                .collect(Collectors.toList());
 
-        return result;
+        Map<String, Object> response = new HashMap<>();
+        response.put("daysAhead", daysAhead);
+        response.put("statusFilter", status != null ? status : "all");
+        response.put("totalVehiclesFound", vehicles.size());
+        response.put("countByStatus", countByStatus);
+        response.put("vehicles", vehicleList);
+
+        return response;
     }
+
 }
