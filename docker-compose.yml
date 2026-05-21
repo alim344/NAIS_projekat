@@ -90,6 +90,34 @@ services:
     networks:
       - autoskola-network
 
+  elasticsearch-mila:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.2.8
+    container_name: elasticsearch_db
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false 
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m" 
+    ports:
+      - "9209:9200"
+    networks:
+      - autoskola-network
+ 
+  practical-class-es:
+    build:
+      context: ./practical-class-es 
+      dockerfile: Dockerfile
+    container_name: practical_class_es_app
+    ports:
+      - "8085:8080" 
+    environment:
+      - SPRING_ELASTICSEARCH_URIS=http://elasticsearch-mila:9200
+    depends_on:
+      - elasticsearch-mila
+    networks:
+      - autoskola-network
+ 
+
+
 networks:
   autoskola-network:
     driver: bridge
