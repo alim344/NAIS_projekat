@@ -84,6 +84,22 @@ CREATE (c6:User:Candidate {username:'jovicm', name:'Milica', lastname:'Jović', 
 CREATE (c7:User:Candidate {username:'anticd', name:'Dušan', lastname:'Antić', email:'dantic@gmail.com', startOfTraining: datetime('2026-04-22T09:30:00'), theoryCompleted: true, category: 'A2', status: 'PENDIPRACTICALNG'})
 
 
+
+
+CREATE (c1:User:Candidate {username:'milicm', name:'Mila', lastname:'Milić', email:'milam@gmail.com', startOfTraining: '2026-04-01T10:00:00', theoryCompleted: true, category: 'B', status: 'PRACTICAL'})
+
+CREATE (c2:User:Candidate {username:'pericp', name:'Petar', lastname:'Perić', email:'pperic@gmail.com', startOfTraining: '2026-04-05T09:00:00', theoryCompleted: true, category: 'B', status: 'PRACTICAL'})
+
+CREATE (c3:User:Candidate {username:'markovics', name:'Sara', lastname:'Marković', email:'saram@gmail.com', startOfTraining: '2026-04-10T11:00:00', theoryCompleted: true, category: 'A', status: 'PRACTICAL'})
+
+CREATE (c4:User:Candidate {username:'nikolicn', name:'Nikola', lastname:'Nikolić', email:'nnikolic@gmail.com', startOfTraining: '2026-03-15T08:00:00', theoryCompleted: true, category: 'C', status: 'PRACTICAL'})
+
+CREATE (c5:User:Candidate {username:'lukicl', name:'Luka', lastname:'Lukić', email:'llukic@gmail.com', startOfTraining: '2026-04-20T14:00:00', theoryCompleted: true, category: 'B', status: 'PRACTICAL'})
+
+CREATE (c6:User:Candidate {username:'jovicm', name:'Milica', lastname:'Jović', email:'mjovic@gmail.com', startOfTraining: '2026-02-01T10:00:00', theoryCompleted: true, category: 'B', status: 'PRACTICAL'})
+
+CREATE (c7:User:Candidate {username:'anticd', name:'Dušan', lastname:'Antić', email:'dantic@gmail.com', startOfTraining: '2026-04-22T09:30:00', theoryCompleted: true, category: 'A2', status: 'PRACTICAL'})
+
 //INST - [TRAINS]-> KANDIDAT
 
 MATCH (i:Instructor {username: 'mikimilojevic'}), (c1:Candidate {username: 'milicm'}), (c2:Candidate {username: 'pericp'})
@@ -94,6 +110,11 @@ CREATE (i)-[:TRAINS]->(c2)
 MATCH (i:Instructor {username: 'jovanovick'}), (c3:Candidate {username: 'markovics'}), (c6:Candidate {username: 'jovicm'})
 CREATE (i)-[:TRAINS]->(c3)
 CREATE (i)-[:TRAINS]->(c6)
+
+MATCH (i:Instructor {username: 'lputaj'}), (c4:Candidate {username: 'nikolicn'}), (c5:Candidate {username: 'lukicl'}),(c7:Candidate {username: 'anticd'})
+CREATE (i)-[:TRAINS]->(c4)
+CREATE (i)-[:TRAINS]->(c5)
+CREATE (i)-[:TRAINS]->(c7)
 
 //PREFERENCE KANDIDATA SA CASOVIMA ISTORIJA
 
@@ -107,6 +128,19 @@ CREATE (tp3_c1:TimePreference {date: date('2026-03-16'), startTime: time('08:00:
 CREATE (pc1_c1:PracticalClass {startTime: datetime('2026-03-02T08:00:00'), completed: true})
 CREATE (pc2_c1:PracticalClass {startTime: datetime('2026-03-10T14:00:00'), completed: true}) // Van termina
 CREATE (pc3_c1:PracticalClass {startTime: datetime('2026-03-16T08:00:00'), completed: true})
+
+
+
+//string
+CREATE (tp1_c1:TimePreference {date: '2026-03-02', startTime: '08:00:00', endTime: '10:00:00'})
+CREATE (tp2_c1:TimePreference {date: '2026-03-09', startTime: '08:00:00', endTime: '10:00:00'})
+CREATE (tp3_c1:TimePreference {date: '2026-03-16', startTime: '08:00:00', endTime: '10:00:00'})
+
+CREATE (pc1_c1:PracticalClass {startTime: '2026-03-02T08:00:00', completed: true})
+CREATE (pc2_c1:PracticalClass {startTime: '2026-03-10T14:00:00', completed: true})
+CREATE (pc3_c1:PracticalClass {startTime: '2026-03-16T08:00:00', completed: true})
+
+
 
 //veye
 MATCH (c:Candidate {username: 'milicm'}), (i:Instructor {username: 'mikimilojevic'})
@@ -180,35 +214,65 @@ CREATE (c)-[:ATTENDS {present: true, kmDriven: 20}]->(pc1_c7)
 CREATE (i)-[:TEACHES {note: 'Noćna vožnja', score: 5}]->(pc1_c7)
 
 
-//ya one gore time prefs i casove u buducnosti
+//string
+// DRUGI KANDIDAT (pericp)
+CREATE (tp1_c2:TimePreference {date: '2026-03-03', startTime: '16:00:00'})
+CREATE (tp2_c2:TimePreference {date: '2026-03-10', startTime: '16:00:00'})
 
-MATCH (c:Candidate {username: 'milicm'}), (i:Instructor {username: 'mikimilojevic'})
-MATCH (pc:PracticalClass {startTime: datetime('2026-04-28T08:00:00')})
-MATCH (tp:TimePreference {date: date('2026-04-28')})
-CREATE (c)-[:HAS_PREFERENCE]->(tp)
-CREATE (c)-[:ATTENDS {present: false, kmDriven: 0}]->(pc)
-CREATE (i)-[:TEACHES {note: 'Planirana gradska vožnja'}]->(pc)
+CREATE (pc1_c2:PracticalClass {startTime: '2026-03-03T16:00:00', completed: true})
+CREATE (pc2_c2:PracticalClass {startTime: '2026-03-11T08:00:00', completed: true})
 
 MATCH (c:Candidate {username: 'pericp'}), (i:Instructor {username: 'mikimilojevic'})
-MATCH (pc:PracticalClass {startTime: datetime('2026-04-29T10:00:00')})
-MATCH (tp:TimePreference {date: date('2026-04-29')})
-CREATE (c)-[:HAS_PREFERENCE]->(tp)
-CREATE (c)-[:ATTENDS {present: false, kmDriven: 0}]->(pc)
-CREATE (i)-[:TEACHES {note: 'Priprema za poligon'}]->(pc)
+CREATE (c)-[:HAS_PREFERENCE]->(tp1_c2), (c)-[:HAS_PREFERENCE]->(tp2_c2)
+CREATE (c)-[:ATTENDS {present: true, kmDriven: 15}]->(pc1_c2), (c)-[:ATTENDS {present: true, kmDriven: 12}]->(pc2_c2)
+CREATE (i)-[:TEACHES {note: 'U terminu', score: 5}]->(pc1_c2), (i)-[:TEACHES {note: 'Morao rano ujutru', score: 3}]->(pc2_c2);
+
+
+// TRECI (markovics)
+CREATE (tp1_c3:TimePreference {date: '2026-03-04', startTime: '10:00:00'})
+CREATE (pc1_c3:PracticalClass {startTime: '2026-03-04T10:00:00', completed: true})
 
 MATCH (c:Candidate {username: 'markovics'}), (i:Instructor {username: 'jovanovick'})
-MATCH (pc:PracticalClass {startTime: datetime('2026-04-30T14:00:00')})
-MATCH (tp:TimePreference {date: date('2026-04-30')})
-CREATE (c)-[:HAS_PREFERENCE]->(tp)
-CREATE (c)-[:ATTENDS {present: false, kmDriven: 0}]->(pc)
-CREATE (i)-[:TEACHES {note: 'Vežbanje parkiranja'}]->(pc)
+CREATE (c)-[:HAS_PREFERENCE]->(tp1_c3)
+CREATE (c)-[:ATTENDS {present: true, kmDriven: 11}]->(pc1_c3)
+CREATE (i)-[:TEACHES {note: 'Prva vožnja', score: 5}]->(pc1_c3);
+
+
+// CETRTI (nikolicn)
+CREATE (tp1_c4:TimePreference {date: '2026-03-07', startTime: '07:00:00'})
+CREATE (pc1_c4:PracticalClass {startTime: '2026-03-07T07:00:00', completed: true})
 
 MATCH (c:Candidate {username: 'nikolicn'}), (i:Instructor {username: 'lputaj'})
-MATCH (pc:PracticalClass {startTime: datetime('2026-05-01T08:00:00')})
-CREATE (c)-[:ATTENDS {present: false, kmDriven: 0}]->(pc)
-CREATE (i)-[:TEACHES {note: 'Vožnja kamiona - ruta 1'}]->(pc)
+CREATE (c)-[:HAS_PREFERENCE]->(tp1_c4)
+CREATE (c)-[:ATTENDS {present: true, kmDriven: 40}]->(pc1_c4)
+CREATE (i)-[:TEACHES {note: 'Kamion poligon', score: 5}]->(pc1_c4);
+
+
+// PETI (lukicl)
+CREATE (tp1_c5:TimePreference {date: '2026-03-05', startTime: '15:00:00'})
+CREATE (pc1_c5:PracticalClass {startTime: '2026-03-05T15:00:00', completed: true})
+
+MATCH (c:Candidate {username: 'lukicl'}), (i:Instructor {username: 'lputaj'})
+CREATE (c)-[:HAS_PREFERENCE]->(tp1_c5)
+CREATE (c)-[:ATTENDS {present: false, kmDriven: 0}]->(pc1_c5)
+CREATE (i)-[:TEACHES {note: 'Nije došao', score: 0}]->(pc1_c5);
+
+
+// SESTI (jovicm)
+CREATE (tp1_c6:TimePreference {date: '2026-03-06', startTime: '12:00:00'})
+CREATE (pc1_c6:PracticalClass {startTime: '2026-03-06T12:00:00', completed: true})
+
+MATCH (c:Candidate {username: 'jovicm'}), (i:Instructor {username: 'jovanovick'})
+CREATE (c)-[:HAS_PREFERENCE]->(tp1_c6)
+CREATE (c)-[:ATTENDS {present: true, kmDriven: 18}]->(pc1_c6)
+CREATE (i)-[:TEACHES {note: 'Spremna za ispit', score: 5}]->(pc1_c6);
+
+
+// SEDMI (anticd)
+CREATE (tp1_c7:TimePreference {date: '2026-03-08', startTime: '18:00:00'})
+CREATE (pc1_c7:PracticalClass {startTime: '2026-03-08T18:00:00', completed: true})
 
 MATCH (c:Candidate {username: 'anticd'}), (i:Instructor {username: 'lputaj'})
-MATCH (pc:PracticalClass {startTime: datetime('2026-05-02T16:00:00')})
-CREATE (c)-[:ATTENDS {present: false, kmDriven: 0}]->(pc)
-CREATE (i)-[:TEACHES {note: 'Motor A2 - kondiciona vožnja'}]->(pc)
+CREATE (c)-[:HAS_PREFERENCE]->(tp1_c7)
+CREATE (c)-[:ATTENDS {present: true, kmDriven: 20}]->(pc1_c7)
+CREATE (i)-[:TEACHES {note: 'Noćna vožnja', score: 5}]->(pc1_c7);

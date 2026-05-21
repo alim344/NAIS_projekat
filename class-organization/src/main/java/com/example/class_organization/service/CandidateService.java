@@ -1,11 +1,18 @@
 package com.example.class_organization.service;
 
+import com.example.class_organization.dto.AttendanceGetDTO;
 import com.example.class_organization.dto.RegistrationDTO;
+import com.example.class_organization.model.Attendance;
 import com.example.class_organization.model.Candidate;
+import com.example.class_organization.model.TrainingStatus;
 import com.example.class_organization.repo.CandidateRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
+
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.List;
 
 @Service
 public class CandidateService {
@@ -25,29 +32,47 @@ public class CandidateService {
        candidate.setStatus(dto.getStatus());
        candidate.setPreferredLocation(dto.getPreferredLocation());
        candidate.setTheoryCompleted(dto.isTheoryCompleted());
-       candidate.setStartOfTraining(dto.getStartOfTraining());
+       candidate.setStartOfTrainingFromDateTime(dto.getStartOfTraining());
        return candidateRepository.save(candidate);
    }
 
-    public void updateAttendance(String username, Long classId, int km , String note ) {
-        try{
+    public int deleteCandidate(String id){
+       return candidateRepository.deleteCandidate(id);
+    }
 
-            int i = candidateRepository.updateAttendanceById(username, classId, km, note);
+    public List<Candidate> getAllCandidates(){
+       return candidateRepository.findAll();
+    }
 
-            if(i == 0){
-                throw new RuntimeException("Nije pronađen zakazan čas za korisnika: " + username);
-            }
 
-        }catch(DataAccessException e){
-            System.out.println("Greska u bayu"+e.getMessage());
+    public Candidate updateCandidateStatus(String id, String status){
+
+
+        try {
+            TrainingStatus newStatus = TrainingStatus.valueOf(status.toUpperCase());
+            return candidateRepository.updateStatus(id, newStatus);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Nepostojeći status: " + status);
         }
+
+    }
+
+    public Candidate updatePrefLocation(String id, String prefLocation){
+
+        return candidateRepository.updatePrefLocation(id,prefLocation);
+    }
+
+
+    public int updateAttendance(String username, String classId, int km , boolean present ) {
+
+            return candidateRepository.updateAttendanceById(username, classId, km, present);
     }
 
 
     public void createAttendance(String username, Long classId){
         try{
-
-            int i = candidateRepository.createAttendance(username, classId, 0, " ");
+            boolean present = false;
+            int i = candidateRepository.createAttendance(username, classId, 0, present );
 
             if(i == 0){
                 throw new RuntimeException("Nije pronađen zakazan čas" );
@@ -57,5 +82,46 @@ public class CandidateService {
             System.out.println("Greska u bayu"+e.getMessage());
         }
     }
+
+    /*public List<AttendanceGetDTO> getCandidateAttendance(String username){
+        List<Attendance> attendances = candidateRepository.findAllAttendancesByUsername(username);
+        return attendances.stream().map(a -> {
+            AttendanceGetDTO dto = new AttendanceGetDTO();
+            dto.setUsername(username);
+            dto.setPresent(a.isPresent());
+            dto.setKmDriven(a.getKmDriven());
+            dto.setStartTime(a.getPracticalClass().getStartTimeAsDateTime());
+            dto.setEndTime(a.getPracticalClass().getEndTimeAsDateTime());
+            dto.setCompleted(a.getPracticalClass().isCompleted());
+            return dto;
+        }).toList();
+    }*/
+
+    public List<AttendanceGetDTO> getCandidateAttendance(String username) {
+        Candidate candidate = candidateRepository.findByUsernameWithAttendances(username)
+                .orElseThrow(() -> new RuntimeException("Candidate not found"));
+
+        return candidate.getAttendanceList().stream().map(a -> {
+            AttendanceGetDTO dto = new AttendanceGetDTO();
+            dto.setUsername(username);
+            dto.setPresent(a.isPresent() != null && a.isPresent());
+            dto.setKmDriven(a.getKmDriven());
+            dto.setStartTime(a.getPracticalClass().getStartTimeAsDateTime());
+            dto.setEndTime(a.getPracticalClass().getEndTimeAsDateTime());
+            dto.setCompleted(a.getPracticalClass().isCompleted());
+            return dto;
+        }).toList();
+    }
+
+
+    public void makeHasPref(String username,Long timeprefId){
+        candidateRepository.createHasPreference(username, timeprefId);
+    }
+
+
+    public List<Candidate> getCandidatesByInstructorId(String id){
+        return candidateRepository.findCandidatesWithKmByInstructor(id);
+    }
+
 
 }

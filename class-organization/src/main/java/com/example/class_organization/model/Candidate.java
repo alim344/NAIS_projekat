@@ -4,31 +4,25 @@ import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.Relationship;
 
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 @Node("Candidate")
 public class Candidate extends  User{
 
 
-    private LocalDateTime startOfTraining;
+    private String startOfTraining;
     private String preferredLocation;
     private boolean theoryCompleted;
     private Category category;
     private TrainingStatus status;
 
     @Relationship(type = "HAS_PREFERENCE", direction = Relationship.Direction.OUTGOING)
-    private List<TimePreference> timePreference;
+    private List<TimePreference> timePreferences;
 
     @Relationship(type = "ATTENDS", direction = Relationship.Direction.OUTGOING)
     private List<Attendance> attendanceList;
 
-    public LocalDateTime getStartOfTraining() {
-        return startOfTraining;
-    }
-
-    public void setStartOfTraining(LocalDateTime startOfTraining) {
-        this.startOfTraining = startOfTraining;
-    }
 
     public String getPreferredLocation() {
         return preferredLocation;
@@ -62,12 +56,12 @@ public class Candidate extends  User{
         this.status = status;
     }
 
-    public List<TimePreference> getTimePreference() {
-        return timePreference;
+    public List<TimePreference> getTimePreferences() {
+        return timePreferences;
     }
 
-    public void setTimePreference(List<TimePreference> timePreference) {
-        this.timePreference = timePreference;
+    public void setTimePreferences(List<TimePreference> timePreferences) {
+        this.timePreferences = timePreferences;
     }
 
     public List<Attendance> getAttendanceList() {
@@ -76,5 +70,28 @@ public class Candidate extends  User{
 
     public void setAttendanceList(List<Attendance> attendanceList) {
         this.attendanceList = attendanceList;
+    }
+
+
+    public LocalDateTime getStartOfTrainingAsDateTime() {
+        if (this.startOfTraining == null) return null;
+
+        return LocalDateTime.parse(this.startOfTraining.replace("Z", ""));
+    }
+
+    public void setStartOfTrainingFromDateTime(LocalDateTime dateTime) {
+        if (dateTime == null) {
+            this.startOfTraining = null;
+        } else {
+            this.startOfTraining = dateTime.toString();
+        }
+    }
+
+    public String getStartOfTraining() {
+        return startOfTraining;
+    }
+
+    public void setStartOfTraining(String startOfTraining) {
+        this.startOfTraining = startOfTraining;
     }
 }
