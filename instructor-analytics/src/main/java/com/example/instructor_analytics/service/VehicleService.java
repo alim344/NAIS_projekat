@@ -47,40 +47,7 @@ public class VehicleService {
         vehicleRepository.deleteById(id);
     }
 
-    public Map<String, Object> getVehiclesByExpiringRegistration(int daysAhead, String status) {
-        LocalDate today = LocalDate.now();
-        LocalDate futureDate = today.plusDays(daysAhead);
 
-        Criteria criteria = new Criteria("registrationExpiryDate")
-                .greaterThanEqual(today.toString())
-                .lessThanEqual(futureDate.toString());
-
-        if (status != null && !status.isEmpty()) {
-            criteria = criteria.and(new Criteria("status").is(status));
-        }
-
-        CriteriaQuery query = new CriteriaQuery(criteria);
-        query.addSort(Sort.by(Sort.Direction.ASC, "registrationExpiryDate"));
-
-        SearchHits<VehicleDocument> hits = elasticsearchOperations.search(query, VehicleDocument.class);
-
-        List<VehicleDocument> vehicles = hits.getSearchHits().stream()
-                .map(SearchHit::getContent)
-                .collect(Collectors.toList());
-
-        Map<String, Long> countByStatus = vehicles.stream()
-                .collect(Collectors.groupingBy(VehicleDocument::getStatus, Collectors.counting()));
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("daysAhead", daysAhead);
-        result.put("statusFilter", status);
-        result.put("totalVehicles", vehicles.size());
-        result.put("countByStatus", countByStatus);
-        result.put("vehicles", vehicles);
-
-        return result;
-    }
-    
     /**
      * COMPLEX QUERY 2:
      * Vozila kojima registracija istice u narednih X dana
@@ -142,6 +109,76 @@ public class VehicleService {
         response.put("statusFilter", status != null ? status : "all");
         response.put("totalVehiclesFound", vehicles.size());
         response.put("countByStatus", countByStatus);
+        response.put("vehicles", vehicleList);
+
+        return response;
+    }
+
+    /**
+     * COMPLEX QUERY 3:
+     * Statistika vozila za određeni brend:
+     * - Prikaz samo za brend koji korisnik unese
+     * - Opcioni filteri: status, minimalna kilometraža
+     * - Prosječna kilometraža, broj vozila, ukupna kilometraža
+     */
+    public Map<String, Object> getVehicleStatisticsByBrand(
+            String brand,
+            String status,
+            Integer minMileage) {
+
+        Criteria criteria = new Criteria("brand").is(brand);
+
+        if (status != null && !status.isEmpty()) {
+            criteria = criteria.and(new Criteria("status").is(status));
+        }
+
+        if (minMileage != null) {
+            criteria = criteria.and(new Criteria("currentMileage").greaterThanEqual(minMileage));
+        }
+
+        CriteriaQuery query = new CriteriaQuery(criteria);
+        query.setMaxResults(1000);
+
+        SearchHits<VehicleDocument> searchHits = elasticsearchOperations.search(
+                query, VehicleDocument.class
+        );
+
+        List<VehicleDocument> vehicles = searchHits.getSearchHits().stream()
+                .map(SearchHit::getContent)
+                .collect(Collectors.toList());
+
+        double avgMileage = vehicles.stream()
+                .mapToInt(VehicleDocument::getCurrentMileage)
+                .average()
+                .orElse(0.0);
+
+        int totalMileage = vehicles.stream()
+                .mapToInt(VehicleDocument::getCurrentMileage)
+                .sum();
+
+        List<Map<String, Object>> vehicleList = vehicles.stream()
+                .map(v -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("id", v.getId());
+                    map.put("registrationNumber", v.getRegistrationNumber());
+                    map.put("brand", v.getBrand());
+                    map.put("status", v.getStatus());
+                    map.put("currentMileage", v.getCurrentMileage());
+                    map.put("registrationExpiryDate", v.getRegistrationExpiryDate());
+                    map.put("instructorName", v.getInstructorName());
+                    map.put("instructorLastname", v.getInstructorLastname());
+                    return map;
+                })
+                .sorted(Comparator.comparingInt(v -> (Integer) v.get("currentMileage")))
+                .collect(Collectors.toList());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("brand", brand);
+        response.put("statusFilter", status != null ? status : "all");
+        response.put("minMileageFilter", minMileage != null ? minMileage : "none");
+        response.put("totalVehiclesFound", vehicles.size());
+        response.put("averageMileage", Math.round(avgMileage));
+        response.put("totalMileage", totalMileage);
         response.put("vehicles", vehicleList);
 
         return response;

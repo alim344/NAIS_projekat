@@ -55,10 +55,13 @@ public class VehicleController {
         return vehicleService.findVehiclesWithExpiringRegistration(daysAhead, status);
     }
 
-    @GetMapping("/search-by-brand")
-    public ResponseEntity<Map<String, Object>> searchByBrand(
-            @RequestParam String brand,
-            @RequestParam(required = false) String status) {
-        return ResponseEntity.ok(vehicleService.searchVehiclesByBrandAndStatus(brand, status));
+    @GetMapping("/statistics/by-brand")
+    public Map<String, Object> getVehicleStatisticsByBrand(
+            @RequestParam String brand,  // ← OBAVEZAN parametar
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Integer minMileage) {
+
+        return vehicleService.getVehicleStatisticsByBrand(brand, status, minMileage);
     }
+
 }
