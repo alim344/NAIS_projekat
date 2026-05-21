@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   neo4j-mila:
@@ -101,6 +100,12 @@ services:
       - "9209:9200"
     networks:
       - autoskola-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
  
   practical-class-es:
     build:
@@ -112,7 +117,8 @@ services:
     environment:
       - SPRING_ELASTICSEARCH_URIS=http://elasticsearch-mila:9200
     depends_on:
-      - elasticsearch-mila
+      elasticsearch-mila:
+        condition: service_healthy
     networks:
       - autoskola-network
  
