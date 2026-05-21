@@ -31,6 +31,7 @@ neo4j_mila_data/
 neo4j_sara_data/
 neo4j_data_tanja/
 neo4j_logs_tanja/
+elasticsearch_sara_data/
 transactions/
 data/
 # IntelliJ & IDE

@@ -90,6 +90,55 @@ services:
     networks:
       - autoskola-network
 
+  elasticsearch-sara:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.0
+    container_name: elasticsearch-sara
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9208:9200"
+    volumes:
+      - ./elasticsearch_sara_data:/usr/share/elasticsearch/data
+    networks:
+      - autoskola-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis-sara:
+    image: redis:7.2
+    container_name: redis-sara
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis_sara_data:/data
+    networks:
+      - autoskola-network
+
+  theory-search-service:
+    build:
+      context: ./theory-search-service
+    container_name: theory-search-service
+    restart: on-failure
+    ports:
+      - "8092:8092"
+    environment:
+      - SPRING_ELASTICSEARCH_URIS=http://elasticsearch-sara:9200
+      - SPRING_DATA_REDIS_HOST=redis-sara
+      - SPRING_DATA_REDIS_PORT=6379
+      - SERVER_PORT=8092
+    depends_on:
+      elasticsearch-sara:
+        condition: service_healthy
+      redis-sara:
+        condition: service_started
+    networks:
+      - autoskola-network
+
 networks:
   autoskola-network:
     driver: bridge
