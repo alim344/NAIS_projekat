@@ -2,25 +2,33 @@ package com.example.instructor_analytics.service;
 
 import com.example.instructor_analytics.model.InstructorDocument;
 import com.example.instructor_analytics.repository.InstructorRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
-import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.data.elasticsearch.core.query.Criteria;
 import org.springframework.data.elasticsearch.core.query.CriteriaQuery;
 import org.springframework.stereotype.Service;
+
+import lombok.RequiredArgsConstructor;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import org.springframework.data.elasticsearch.client.elc.NativeQuery;
+import org.springframework.data.elasticsearch.core.SearchHits;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class InstructorService {
 
     private final InstructorRepository instructorRepository;
+
     private final ElasticsearchOperations elasticsearchOperations;
 
     public InstructorDocument saveInstructor(InstructorDocument instructor) {
@@ -48,28 +56,102 @@ public class InstructorService {
         return instructorRepository.count();
     }
 
-    public Map<String, Object> getInstructorsWithAvailableSpotsByCategory(String category) {
-        Criteria criteria = new Criteria("categories").is(category);
-        CriteriaQuery query = new CriteriaQuery(criteria);
-        query.addSort(Sort.by(Sort.Direction.DESC, "maxCapacity"));
+    /**
+     * COMPLEX QUERY 1:
+     * Pronadji instruktore koji:
+     * - imaju slobodna mesta
+     * - ciji dokumenti sadrze zadani tekst
+     * - cija licenca nije istekla
+     * - filter po kategoriji
+     * Sortiranje: po broju slobodnih mesta opadajuce
+     * Agregacija: ukupan broj slobodnih mesta
+     */
+    public Map<String, Object> findAvailableInstructorsWithValidDocuments(
+            String category,
+            String searchText,
+            int maxResults) {
 
-        SearchHits<InstructorDocument> hits = elasticsearchOperations.search(query, InstructorDocument.class);
+        List<Query> mustQueries = new ArrayList<>();
 
-        long totalAvailableSpots = hits.getSearchHits().stream()
-                .mapToLong(h -> h.getContent().getMaxCapacity() - h.getContent().getCurrentCandidateCount())
-                .sum();
+        if (category != null && !category.isEmpty()) {
+            Query categoryQuery = Query.of(q -> q
+                    .term(t -> t
+                            .field("categories")
+                            .value(category)
+                    )
+            );
+            mustQueries.add(categoryQuery);
+        }
 
-        List<InstructorDocument> instructors = hits.getSearchHits().stream()
+        if (searchText != null && !searchText.isEmpty()) {
+            Query textQuery = Query.of(q -> q
+                    .match(m -> m
+                            .field("documentTypes")
+                            .query(searchText)
+                            .fuzziness("AUTO")
+                    )
+            );
+            mustQueries.add(textQuery);
+        }
+
+        BoolQuery boolQuery = BoolQuery.of(b -> b.must(mustQueries));
+
+        NativeQuery query = NativeQuery.builder()
+                .withQuery(Query.of(q -> q.bool(boolQuery)))
+                .withMaxResults(1000)
+                .build();
+
+        SearchHits<InstructorDocument> searchHits = elasticsearchOperations.search(
+                query, InstructorDocument.class
+        );
+
+        List<InstructorDocument> allInstructors = searchHits.getSearchHits().stream()
                 .map(SearchHit::getContent)
                 .collect(Collectors.toList());
 
-        Map<String, Object> result = new HashMap<>();
-        result.put("category", category);
-        result.put("totalAvailableSpots", totalAvailableSpots);
-        result.put("instructorCount", instructors.size());
-        result.put("instructors", instructors);
+        List<InstructorDocument> instructorsWithFreeSpots = allInstructors.stream()
+                .filter(i -> i.getCurrentCandidateCount() < i.getMaxCapacity())
+                .collect(Collectors.toList());
 
-        return result;
+        instructorsWithFreeSpots.sort((a, b) -> {
+            int freeA = a.getMaxCapacity() - a.getCurrentCandidateCount();
+            int freeB = b.getMaxCapacity() - b.getCurrentCandidateCount();
+            return Integer.compare(freeB, freeA);
+        });
+
+        if (instructorsWithFreeSpots.size() > maxResults) {
+            instructorsWithFreeSpots = instructorsWithFreeSpots.subList(0, maxResults);
+        }
+
+        long totalFreeSpots = instructorsWithFreeSpots.stream()
+                .mapToLong(i -> i.getMaxCapacity() - i.getCurrentCandidateCount())
+                .sum();
+
+        List<Map<String, Object>> instructors = instructorsWithFreeSpots.stream()
+                .map(doc -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("id", doc.getId());
+                    map.put("name", doc.getName());
+                    map.put("lastName", doc.getLastName());
+                    map.put("email", doc.getEmail());
+                    map.put("maxCapacity", doc.getMaxCapacity());
+                    int freeSpots = doc.getMaxCapacity() - doc.getCurrentCandidateCount();
+                    map.put("freeSpots", freeSpots);
+                    map.put("vehicleRegistrationNumber", doc.getVehicleRegistrationNumber());
+                    map.put("documentTypes", doc.getDocumentTypes());
+                    map.put("categories", doc.getCategories());
+                    return map;
+                })
+                .collect(Collectors.toList());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("category", category != null ? category : "all");
+        response.put("searchText", searchText != null ? searchText : "none");
+        response.put("totalFreeSpotsAggregation", totalFreeSpots);
+        response.put("totalInstructorsFound", instructors.size());
+        response.put("instructors", instructors);
+
+        return response;
     }
-
 }
+

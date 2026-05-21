@@ -46,10 +46,16 @@ public class InstructorController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/available-by-category")
-    public ResponseEntity<Map<String, Object>> getAvailableByCategory(
-            @RequestParam String category) {
-        return ResponseEntity.ok(instructorService.getInstructorsWithAvailableSpotsByCategory(category));
+    @GetMapping("/available")
+    public Map<String, Object> findAvailableInstructors(
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String searchText,
+            @RequestParam(defaultValue = "20") int maxResults) {
+
+        return instructorService.findAvailableInstructorsWithValidDocuments(
+                category, searchText, maxResults
+        );
     }
+
 
 }

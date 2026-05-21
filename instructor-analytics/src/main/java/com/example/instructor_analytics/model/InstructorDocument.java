@@ -5,10 +5,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.elasticsearch.annotations.DateFormat;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Document(indexName = "instructors")
@@ -42,9 +44,9 @@ public class InstructorDocument {
     @Field(type = FieldType.Text)
     private String documentTypes;
 
-    @Field(type = FieldType.Keyword)
-    private String licenseExpiryDate;
+    @Field(type = FieldType.Date, format = DateFormat.basic_date)  // yyyy-MM-dd
+    private LocalDate licenseExpiryDate;
 
     @Field(type = FieldType.Keyword)
-    private List<String> categories;
+    private List<Category> categories;
 }
