@@ -36,4 +36,44 @@ public class ComplexQController {
         return ResponseEntity.ok(responseData);
     }
 
+
+
+
+    @GetMapping("/scheduling")
+    public ResponseEntity<Map<String, Object>> findCandidatesForScheduling(
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) Double minAvgGrade,
+            @RequestParam(required = false) Integer minClasses,
+            @RequestParam(required = false) String prefDate) {
+
+        Map<String, Object> responseData = queryService.findCandidatesForScheduling(
+                category,
+                minAvgGrade,
+                minClasses,
+                prefDate
+        );
+
+        return ResponseEntity.ok(responseData);
+    }
+
+
+    @GetMapping("/problematic")
+    public ResponseEntity<Map<String, Object>> findProblematicClasses(
+            @RequestParam(required = false) Integer maxScore,
+            @RequestParam(required = false) Integer minKm,
+            @RequestParam(required = false) Long instructorId) {
+
+        Map<String, Object> responseData = queryService.findProblematicClasses(
+                maxScore,
+                minKm,
+                instructorId
+        );
+
+        return ResponseEntity.ok(responseData);
+    }
+
+
+
+
+
 }
