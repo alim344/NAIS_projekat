@@ -28,6 +28,7 @@ public class TheorySearchService {
 
     private final ElasticsearchOperations elasticsearchOperations;
     private static final DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
+    private final RedisCacheService redisCacheService;
 
     public Map<String, Object> searchQuestionsWithStats(
             String searchText,
@@ -35,6 +36,14 @@ public class TheorySearchService {
             Integer minDifficulty,
             Integer maxDifficulty,
             String category) {
+
+        String cacheKey = "questions:search:" + searchText + ":lesson:" + lessonOrderNumber
+                + ":diff:" + minDifficulty + "-" + maxDifficulty + ":cat:" + category;
+        Object cached = redisCacheService.get(cacheKey);
+        if (cached != null) {
+            System.out.println("Podaci preuzeti iz Redis kesa: " + cacheKey);
+            return (Map<String, Object>) cached;
+        }
 
         List<Query> mustQueries = new ArrayList<>();
 
@@ -123,6 +132,9 @@ public class TheorySearchService {
         result.put("statsByCategory", sortedCategories);
         result.put("overallAverageDifficulty", questions.stream()
                 .mapToInt(TheoryQuestion::getDifficultyLevel).average().orElse(0.0));
+
+        redisCacheService.save(cacheKey, result, 10);
+        System.out.println("Podaci sacuvani u Redis kes: " + cacheKey);
         return result;
     }
 
@@ -132,6 +144,17 @@ public class TheorySearchService {
             String professorUsername,
             Integer minCandidates,
             Boolean onlyFullyAttended) {
+
+        String cacheKey = "classes:professor:" + professorUsername
+                + ":from:" + (fromDate != null ? fromDate.format(formatter) : "any")
+                + ":to:" + (toDate != null ? toDate.format(formatter) : "any")
+                + ":minCandidates:" + minCandidates
+                + ":fullyAttended:" + onlyFullyAttended;
+        Object cached = redisCacheService.get(cacheKey);
+        if (cached != null) {
+            System.out.println("Podaci preuzeti iz Redis kesa: " + cacheKey);
+            return (Map<String, Object>) cached;
+        }
 
         List<Query> mustQueries = new ArrayList<>();
 
@@ -219,6 +242,9 @@ public class TheorySearchService {
                 .mapToDouble(TheoryClassLog::getAverageCandidateScore).average().orElse(0.0));
         result.put("totalCandidatesAttended", classes.stream()
                 .mapToInt(TheoryClassLog::getCandidateCount).sum());
+
+        redisCacheService.save(cacheKey, result, 10);
+        System.out.println("Podaci sacuvani u Redis kes: " + cacheKey);
         return result;
     }
 
@@ -227,6 +253,16 @@ public class TheorySearchService {
             LocalDateTime fromDate,
             LocalDateTime toDate,
             Integer minDurationMinutes) {
+
+        String cacheKey = "classroom:usage:" + classroomName
+                + ":from:" + (fromDate != null ? fromDate.format(formatter) : "any")
+                + ":to:" + (toDate != null ? toDate.format(formatter) : "any")
+                + ":minDuration:" + minDurationMinutes;
+        Object cached = redisCacheService.get(cacheKey);
+        if (cached != null) {
+            System.out.println("Podaci preuzeti iz Redis kesa: " + cacheKey);
+            return (Map<String, Object>) cached;
+        }
 
         List<Query> mustQueries = new ArrayList<>();
 
@@ -323,6 +359,9 @@ public class TheorySearchService {
         result.put("top3MostOccupied", mostOccupied);
         result.put("overallAverageDuration", classes.stream()
                 .mapToInt(TheoryClassLog::getDurationMinutes).average().orElse(0.0));
+
+        redisCacheService.save(cacheKey, result, 10);
+        System.out.println("Podaci sacuvani u Redis kes: " + cacheKey);
         return result;
     }
 }

@@ -36,7 +36,7 @@ public class TheoryClassLogController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TheoryClassLog> getById(@PathVariable Long id) {
+    public ResponseEntity<TheoryClassLog> getById(@PathVariable String id) {
         return crudService.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -63,13 +63,13 @@ public class TheoryClassLogController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<TheoryClassLog> update(@PathVariable Long id,
+    public ResponseEntity<TheoryClassLog> update(@PathVariable String id,
                                                  @RequestBody TheoryClassLog log) {
         return ResponseEntity.ok(crudService.update(id, log));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> delete(@PathVariable Long id) {
+    public ResponseEntity<String> delete(@PathVariable String id) {
         crudService.delete(id);
         return ResponseEntity.ok("Deleted: " + id);
     }

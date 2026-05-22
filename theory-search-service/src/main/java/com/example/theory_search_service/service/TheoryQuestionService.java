@@ -24,7 +24,7 @@ public class TheoryQuestionService {
         return result;
     }
 
-    public Optional<TheoryQuestion> findById(Long id) {
+    public Optional<TheoryQuestion> findById(String id) {
         return theoryQuestionRepository.findById(id);
     }
 
@@ -46,14 +46,14 @@ public class TheoryQuestionService {
         return theoryQuestionRepository.findByCategory(category);
     }
 
-    public TheoryQuestion update(Long id, TheoryQuestion updated) {
+    public TheoryQuestion update(String id, TheoryQuestion updated) {
         theoryQuestionRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Question not found: " + id));
         updated.setId(id);
         return theoryQuestionRepository.save(updated);
     }
 
-    public void delete(Long id) {
+    public void delete(String id) {
         theoryQuestionRepository.deleteById(id);
     }
 

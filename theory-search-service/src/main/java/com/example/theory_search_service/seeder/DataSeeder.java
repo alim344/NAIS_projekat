@@ -30,9 +30,6 @@ public class DataSeeder implements CommandLineRunner {
     private static final String[] CLASSROOMS = {"Mala Sala 101", "Velika Sala Amfiteatar", "Srednja Sala 202"};
     private static final int[] CAPACITIES = {5, 50, 20};
 
-    private static final AtomicLong questionIdSeq = new AtomicLong(1);
-    private static final AtomicLong classLogIdSeq = new AtomicLong(1);
-
     @Override
     public void run(String... args) {
         seedQuestions();
@@ -54,7 +51,7 @@ public class DataSeeder implements CommandLineRunner {
 
             for (int q = 1; q <= 25; q++) {
                 TheoryQuestion question = new TheoryQuestion();
-                question.setId(questionIdSeq.getAndIncrement());
+                question.setId(UUID.randomUUID().toString());
                 question.setLessonOrderNumber(lessonNum);
                 question.setLessonTitle(lessonTitle);
                 question.setCategory(category);
@@ -102,7 +99,7 @@ public class DataSeeder implements CommandLineRunner {
             int candidates = 1 + random.nextInt(capacity);
 
             TheoryClassLog log = new TheoryClassLog();
-            log.setId(classLogIdSeq.getAndIncrement());
+            log.setId(UUID.randomUUID().toString());
             log.setProfessorUsername(PROFESSORS[profIndex]);
             log.setProfessorFullName(PROFESSOR_NAMES[profIndex]);
             log.setClassroomName(CLASSROOMS[classroomIndex]);

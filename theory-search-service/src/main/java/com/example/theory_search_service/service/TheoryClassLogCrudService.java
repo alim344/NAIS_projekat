@@ -25,7 +25,7 @@ public class TheoryClassLogCrudService {
         return result;
     }
 
-    public Optional<TheoryClassLog> findById(Long id) {
+    public Optional<TheoryClassLog> findById(String id) {
         return theoryClassLogRepository.findById(id);
     }
 
@@ -51,14 +51,14 @@ public class TheoryClassLogCrudService {
         return theoryClassLogRepository.findByCategory(category);
     }
 
-    public TheoryClassLog update(Long id, TheoryClassLog updated) {
+    public TheoryClassLog update(String id, TheoryClassLog updated) {
         theoryClassLogRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Log not found: " + id));
         updated.setId(id);
         return theoryClassLogRepository.save(updated);
     }
 
-    public void delete(Long id) {
+    public void delete(String id) {
         theoryClassLogRepository.deleteById(id);
     }
 

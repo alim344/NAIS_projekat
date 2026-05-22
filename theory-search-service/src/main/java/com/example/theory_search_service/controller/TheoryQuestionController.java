@@ -34,7 +34,7 @@ public class TheoryQuestionController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TheoryQuestion> getById(@PathVariable Long id) {
+    public ResponseEntity<TheoryQuestion> getById(@PathVariable String id) {
         return theoryQuestionService.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -56,13 +56,13 @@ public class TheoryQuestionController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<TheoryQuestion> update(@PathVariable Long id,
+    public ResponseEntity<TheoryQuestion> update(@PathVariable String id,
                                                  @RequestBody TheoryQuestion question) {
         return ResponseEntity.ok(theoryQuestionService.update(id, question));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> delete(@PathVariable Long id) {
+    public ResponseEntity<String> delete(@PathVariable String id) {
         theoryQuestionService.delete(id);
         return ResponseEntity.ok("Deleted: " + id);
     }

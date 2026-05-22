@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface TheoryQuestionRepository extends ElasticsearchRepository<TheoryQuestion, Long> {
+public interface TheoryQuestionRepository extends ElasticsearchRepository<TheoryQuestion, String> {
     List<TheoryQuestion> findByLessonOrderNumber(int lessonOrderNumber);
     List<TheoryQuestion> findByDifficultyLevel(int difficultyLevel);
     List<TheoryQuestion> findByCategory(String category);

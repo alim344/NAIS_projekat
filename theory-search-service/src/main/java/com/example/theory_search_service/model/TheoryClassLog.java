@@ -16,7 +16,8 @@ import java.time.LocalDateTime;
 public class TheoryClassLog {
 
     @Id
-    private Long id;
+    @Field(type = FieldType.Keyword)
+    private String id;
 
     @Field(type = FieldType.Keyword)
     private String professorUsername;

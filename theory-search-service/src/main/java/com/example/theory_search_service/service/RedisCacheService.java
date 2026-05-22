@@ -8,15 +8,16 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
-public class RedisService {
+public class RedisCacheService {
 
     private final RedisTemplate<String, Object> redisTemplate;
 
-    public void set(String key, Object value, Duration ttl) {
-        redisTemplate.opsForValue().set(key, value, ttl);
+    public void save(String key, Object value, long ttlMinutes) {
+        redisTemplate.opsForValue().set(key, value, ttlMinutes, TimeUnit.MINUTES);
     }
 
     public Object get(String key) {
@@ -29,6 +30,10 @@ public class RedisService {
 
     public boolean exists(String key) {
         return Boolean.TRUE.equals(redisTemplate.hasKey(key));
+    }
+
+    public void set(String key, Object value, Duration ttl) {
+        redisTemplate.opsForValue().set(key, value, ttl.getSeconds(), TimeUnit.SECONDS);
     }
 
     public void addToLeaderboard(String username, double score) {
@@ -57,7 +62,7 @@ public class RedisService {
 
     public void setActiveLesson(String username, String lessonTitle) {
         redisTemplate.opsForValue().set("session:" + username + ":active-lesson",
-                lessonTitle, Duration.ofHours(2));
+                lessonTitle, 2, TimeUnit.HOURS);
     }
 
     public Object getActiveLesson(String username) {

@@ -15,7 +15,8 @@ import java.util.List;
 public class TheoryQuestion {
 
     @Id
-    private Long id;
+    @Field(type = FieldType.Keyword)
+    private String id;
 
     @Field(type = FieldType.Text, analyzer = "standard")
     private String questionText;

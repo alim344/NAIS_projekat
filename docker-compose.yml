@@ -113,7 +113,7 @@ services:
     image: redis:7.2
     container_name: redis-sara
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - ./redis_sara_data:/data
     networks:
