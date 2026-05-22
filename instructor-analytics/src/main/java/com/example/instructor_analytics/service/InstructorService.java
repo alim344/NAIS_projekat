@@ -2,6 +2,9 @@ package com.example.instructor_analytics.service;
 
 import com.example.instructor_analytics.model.InstructorDocument;
 import com.example.instructor_analytics.repository.InstructorRepository;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.stereotype.Service;
@@ -63,17 +66,13 @@ public class InstructorService {
      * Sortiranje: po broju slobodnih mesta opadajuce
      * Agregacija: ukupan broj slobodnih mesta
      */
+    @Cacheable(value = "instructors", key = "#category + '_' + #searchText + '_' + #maxResults", unless = "#result == null")
     public Map<String, Object> findAvailableInstructorsWithValidDocuments(
             String category,
             String searchText,
             int maxResults) {
 
-        String cacheKey = "instructors:available:category:" + (category != null ? category : "all") + ":text:" + (searchText != null ? searchText : "none");
-        Object cached = redisCacheService.get(cacheKey);
-        if (cached != null) {
-            System.out.println("Podaci preuzeti iz Redis kesa: " + cacheKey);
-            return (Map<String, Object>) cached;
-        }
+        System.out.println("⏺ Izvršavam upit nad Elasticsearch-om (nije iz keša)");
 
         List<Query> mustQueries = new ArrayList<>();
 
@@ -155,10 +154,22 @@ public class InstructorService {
         response.put("totalInstructorsFound", instructors.size());
         response.put("instructors", instructors);
 
-        redisCacheService.save(cacheKey, response, 10);
-        System.out.println("Podaci sacuvani u Redis kes: " + cacheKey);
-
         return response;
+    }
+
+    @Cacheable(value = "instructors", key = "#id", unless = "#result == null")
+    public InstructorDocument findById(String id) {
+        return elasticsearchOperations.get(id, InstructorDocument.class);
+    }
+
+    @CachePut(value = "instructors", key = "#result.id")
+    public InstructorDocument save(InstructorDocument instructor) {
+        return elasticsearchOperations.save(instructor);
+    }
+
+    @CacheEvict(value = "instructors", key = "#id")
+    public void deleteById(String id) {
+        elasticsearchOperations.delete(id, InstructorDocument.class);
     }
 }
 
