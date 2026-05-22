@@ -3,6 +3,7 @@ package com.example.instructor_analytics.service;
 import com.example.instructor_analytics.model.VehicleDocument;
 import com.example.instructor_analytics.repository.VehicleRepository;
 import lombok.AllArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
@@ -55,16 +56,10 @@ public class VehicleService {
      * + sortiranje po datumu isteka (rastuce)
      * + agregacija: broj vozila po statusu
      */
+    @Cacheable(value = "vehicles", key = "'expiring:' + #daysAhead + ':' + (#status != null ? #status : 'all')", unless = "#result == null")
     public Map<String, Object> findVehiclesWithExpiringRegistration(
             int daysAhead,
             String status) {
-
-        String cacheKey = "vehicles:expiring:days:" + daysAhead + ":status:" + (status != null ? status : "all");
-        Object cached = redisCacheService.get(cacheKey);
-        if (cached != null) {
-            System.out.println("Podaci preuzeti iz Redis kesa: " + cacheKey);
-            return (Map<String, Object>) cached;
-        }
 
         String today = LocalDate.now().format(DATE_FORMATTER);
         String futureDate = LocalDate.now().plusDays(daysAhead).format(DATE_FORMATTER);
@@ -118,24 +113,22 @@ public class VehicleService {
         response.put("countByStatus", countByStatus);
         response.put("vehicles", vehicleList);
 
-        redisCacheService.save(cacheKey, response, 10);
-        System.out.println("Podaci sacuvani u Redis kes: " + cacheKey);
-
         return response;
     }
 
+
+    /**
+     * COMPLEX QUERY 3:
+     * Statistika vozila za odredjeni brend:
+     * - Prikaz samo za brend koji korisnik unese
+     * - Opcioni filteri: status, minimalna kilometraza
+     * - Prosecna kilometraza, broj vozila, ukupna kilometraza
+     */
+    @Cacheable(value = "vehicles", key = "'stats:' + #brand + ':' + (#status != null ? #status : 'all') + ':' + (#minMileage != null ? #minMileage : 'none')", unless = "#result == null")
     public Map<String, Object> getVehicleStatisticsByBrand(
             String brand,
             String status,
             Integer minMileage) {
-
-        // REDIS provera
-        String cacheKey = "vehicles:brand:" + brand + ":status:" + (status != null ? status : "all") + ":minMileage:" + (minMileage != null ? minMileage : "none");
-        Object cached = redisCacheService.get(cacheKey);
-        if (cached != null) {
-            System.out.println("Podaci preuzeti iz Redis kesa: " + cacheKey);
-            return (Map<String, Object>) cached;
-        }
 
         Criteria criteria = new Criteria("brand").is(brand);
 
@@ -191,9 +184,6 @@ public class VehicleService {
         response.put("averageMileage", Math.round(avgMileage));
         response.put("totalMileage", totalMileage);
         response.put("vehicles", vehicleList);
-
-        redisCacheService.save(cacheKey, response, 10);
-        System.out.println("Podaci sacuvani u Redis kes: " + cacheKey);
 
         return response;
     }
