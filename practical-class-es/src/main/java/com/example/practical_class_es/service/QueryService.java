@@ -3,10 +3,11 @@ package com.example.practical_class_es.service;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
+import co.elastic.clients.json.JsonData;
 import com.example.practical_class_es.doc.CandidateAnalytics;
 import com.example.practical_class_es.doc.PracticalClassLog;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.client.elc.NativeQueryBuilder;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
@@ -25,7 +26,11 @@ public class QueryService {
     private ElasticsearchOperations elasticsearchOperations;
 
 
-//---------------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------
+    @Cacheable(
+            value = "classSearch",
+            key = "#searchText + '_' + #minScore + '_' + #minKm + '_' + #maxKm + '_' + #onlyCompleted"
+    )
     public Map<String, Object> searchClassesByTextAndPerformance(
             String searchText,
             Integer minScore,
@@ -60,33 +65,27 @@ public class QueryService {
 
         // Filter: minimalni skor
         if (minScore != null) {
-            Query scoreQuery = Query.of(q -> q
-                    .range(RangeQuery.of(r -> r
-                            .number(n -> n
-                                    .field("score")
-                                    .gte(minScore.doubleValue())
-                            )
-                    ))
-            );
-            mustQueries.add(scoreQuery);
+            mustQueries.add(Query.of(q -> q
+                    .range(r -> r
+                            .field("score")
+                            .gte(JsonData.of(minScore))
+                    )
+            ));
         }
 
-        // Filter: opseg kilometraze
+        // Filter: opseg km
         if (minKm != null || maxKm != null) {
-            Query kmQuery = Query.of(q -> q
-                    .range(RangeQuery.of(r -> r
-                            .number(n -> {
-                                n.field("kmDriven");
-                                if (minKm != null) n.gte(minKm.doubleValue());
-                                if (maxKm != null) n.lte(maxKm.doubleValue());
-                                return n;
-                            })
-                    ))
-            );
-            mustQueries.add(kmQuery);
+            mustQueries.add(Query.of(q -> q
+                    .range(r -> {
+                        r.field("kmDriven");
+                        if (minKm != null) r.gte(JsonData.of(minKm));
+                        if (maxKm != null) r.lte(JsonData.of(maxKm));
+                        return r;
+                    })
+            ));
         }
 
-        // Filter: isključi časove sa kvarom na vozilu
+        // Filter: iskljuci casove sa kvarom na vozilu
         Query noMalfunctionQuery = Query.of(q -> q
                 .term(t -> t
                         .field("vehicleInfo.malfunction")
@@ -141,19 +140,25 @@ public class QueryService {
                 ));
 
         // Sortiranje kategorija po prosecnom skoru (desc)
-        List<Map.Entry<String, Map<String, Object>>> sortedCategories = statsByCategory.entrySet().stream()
+        // instead of List<Map.Entry<...>>
+        List<Map<String, Object>> sortedCategories = statsByCategory.entrySet().stream()
                 .sorted((e1, e2) -> Double.compare(
                         (Double) e2.getValue().get("averageScore"),
                         (Double) e1.getValue().get("averageScore")
                 ))
+                .map(e -> {
+                    Map<String, Object> item = new LinkedHashMap<>();
+                    item.put("category", e.getKey());
+                    item.putAll(e.getValue());
+                    return item;
+                })
                 .collect(Collectors.toList());
 
-        // Top 5 časova po skoru
+        // Top 5 casova po skoru
         List<PracticalClassLog> top5 = logs.stream().limit(5).collect(Collectors.toList());
 
         Map<String, Object> result = new HashMap<>();
         result.put("totalHits", searchHits.getTotalHits());
-
         result.put("top5ByScore", top5);
         result.put("statsByCategory", sortedCategories);
         result.put("overallAverageScore", logs.stream()
@@ -166,9 +171,11 @@ public class QueryService {
     }
 
 
-
-
-//----------------------------------------------------
+    //----------------------------------------------------
+    @Cacheable(
+            value = "candidateScheduling",
+            key = "#category + '_' + #minAvgGrade + '_' + #minClasses + '_' + #prefDate"
+    )
     public Map<String, Object> findCandidatesForScheduling(
             String category,
             Double minAvgGrade,
@@ -185,32 +192,34 @@ public class QueryService {
                 .term(t -> t.field("theoryCompleted").value(true))
         ));
 
-        //  filter po kategoriji
+        // filter po kategoriji
         if (category != null && !category.isBlank()) {
             mustQueries.add(Query.of(q -> q
                     .term(t -> t.field("category").value(category))
             ));
         }
 
-        //  filter: prosečna ocena >= minAvgGrade
+        // filter: prosecna ocena >= minAvgGrade
         if (minAvgGrade != null) {
             mustQueries.add(Query.of(q -> q
-                    .range(RangeQuery.of(r -> r
-                            .number(n -> n.field("avgClassGrade").gte(minAvgGrade))
-                    ))
+                    .range(r -> r
+                            .field("avgClassGrade")
+                            .gte(JsonData.of(minAvgGrade))
+                    )
             ));
         }
 
-        //  filter: broj časova >= minClasses
+        // filter: broj casova >= mnClasses
         if (minClasses != null) {
             mustQueries.add(Query.of(q -> q
-                    .range(RangeQuery.of(r -> r
-                            .number(n -> n.field("numberOfHeldClasses").gte(minClasses.doubleValue()))
-                    ))
+                    .range(r -> r
+                            .field("numberOfHeldClasses")
+                            .gte(JsonData.of(minClasses))
+                    )
             ));
         }
 
-        // filterČ aktivna preferencija za određeni datum
+        // filter: aktivna pref za odredjeni datum
         if (prefDate != null && !prefDate.isBlank()) {
             mustQueries.add(Query.of(q -> q
                     .nested(n -> n
@@ -265,10 +274,16 @@ public class QueryService {
                 ));
 
         // sortiranje lokacija po broju kandidata DESC
-        List<Map.Entry<String, Map<String, Object>>> rankedLocations = statsByLocation.entrySet().stream()
+        List<Map<String, Object>> rankedLocations = statsByLocation.entrySet().stream()
                 .sorted((e1, e2) -> Integer.compare(
                         (int) e2.getValue().get("candidateCount"),
                         (int) e1.getValue().get("candidateCount")))
+                .map(e -> {
+                    Map<String, Object> item = new LinkedHashMap<>();
+                    item.put("location", e.getKey());
+                    item.putAll(e.getValue());
+                    return item;
+                })
                 .collect(Collectors.toList());
 
         Map<String, Object> result = new LinkedHashMap<>();
@@ -283,10 +298,11 @@ public class QueryService {
     }
 
 
-
-//---------------------------
-
-
+    //---------------------------
+    @Cacheable(
+            value = "problematicClasses",
+            key = "#maxScore + '_' + #minKm + '_' + #instructorId"
+    )
     public Map<String, Object> findProblematicClasses(
             Integer maxScore,
             Integer minKm,
@@ -296,28 +312,28 @@ public class QueryService {
 
         // Uvek: km > 0 (cas je stvarno krenuo)
         mustQueries.add(Query.of(q -> q
-                .range(RangeQuery.of(r -> r
-                        .number(n -> n.field("kmDriven")
-                                .gte(minKm != null ? minKm.doubleValue() : 1.0))
-                ))
+                .range(r -> r
+                        .field("kmDriven")
+                        .gte(JsonData.of(minKm != null ? minKm : 1))
+                )
         ));
 
-        //  filter: score <= maxScore
+        // filter: score <= maxScore
         if (maxScore != null) {
             mustQueries.add(Query.of(q -> q
-                    .range(RangeQuery.of(r -> r
-                            .number(n -> n.field("score").lte(maxScore.doubleValue()))
-                    ))
+                    .range(r -> r
+                            .field("score")
+                            .lte(JsonData.of(maxScore))
+                    )
             ));
         }
 
-        //  filter: određeni instruktor
+        // filter: odredjeni instruktor
         if (instructorId != null) {
             mustQueries.add(Query.of(q -> q
                     .term(t -> t.field("instructorInfo.id").value(instructorId))
             ));
         }
-
 
         List<Query> shouldQueries = new ArrayList<>();
         shouldQueries.add(Query.of(q -> q
@@ -368,12 +384,17 @@ public class QueryService {
                         })
                 ));
 
-        // Sortiraj modele po broju problematicnih cAsova DESC
-
-        List<Map.Entry<String, Map<String, Object>>> rankedVehicles = statsByVehicle.entrySet().stream()
+        // Sortiraj modele po broju problematicnih casova DESC
+        List<Map<String, Object>> rankedVehicles = statsByVehicle.entrySet().stream()
                 .sorted((e1, e2) -> Integer.compare(
                         (Integer) e2.getValue().get("totalProblematic"),
                         (Integer) e1.getValue().get("totalProblematic")))
+                .map(e -> {
+                    Map<String, Object> item = new LinkedHashMap<>();
+                    item.put("model", e.getKey());
+                    item.putAll(e.getValue());
+                    return item;
+                })
                 .collect(Collectors.toList());
 
         // Top 5 kandidata sa naj problematicnih casova
@@ -384,9 +405,15 @@ public class QueryService {
                         Collectors.counting()
                 ));
 
-        List<Map.Entry<Long, Long>> top5Candidates = problemsPerCandidate.entrySet().stream()
+        List<Map<String, Object>> top5Candidates = problemsPerCandidate.entrySet().stream()
                 .sorted((e1, e2) -> Long.compare(e2.getValue(), e1.getValue()))
                 .limit(5)
+                .map(e -> {
+                    Map<String, Object> item = new LinkedHashMap<>();
+                    item.put("candidateId", e.getKey());
+                    item.put("problemCount", e.getValue());
+                    return item;
+                })
                 .collect(Collectors.toList());
 
         long totalMalfunctions = logs.stream()
@@ -402,9 +429,4 @@ public class QueryService {
 
         return result;
     }
-
-
-
-
-
 }

@@ -4,11 +4,15 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Document(indexName = "candidate-analytics-timeprefs")
-public class CandidateAnalytics {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class CandidateAnalytics implements Serializable {
 
     @Id
     private String id;

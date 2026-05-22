@@ -1,6 +1,10 @@
 package com.example.practical_class_es.doc;
 
-public class CandidateInfo {
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+import java.io.Serializable;
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class CandidateInfo implements Serializable {
 
 
     private Long id;

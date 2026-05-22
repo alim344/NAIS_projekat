@@ -5,9 +5,13 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+import java.io.Serializable;
 
 @Document(indexName = "practical-class-log")
-public class PracticalClassLog {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class PracticalClassLog implements Serializable {
 
     @Id
     private String id;

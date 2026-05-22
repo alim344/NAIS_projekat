@@ -1,6 +1,11 @@
 package com.example.practical_class_es.doc;
 
-public class VehicleInfo {
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+import java.io.Serializable;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class VehicleInfo implements Serializable {
 
     private Long id;
     private String model;

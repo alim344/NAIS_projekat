@@ -90,7 +90,7 @@ services:
       - autoskola-network
 
   elasticsearch-mila:
-    image: docker.elastic.co/elasticsearch/elasticsearch:9.2.8
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
     container_name: elasticsearch_db
     environment:
       - discovery.type=single-node
@@ -116,13 +116,28 @@ services:
       - "8085:8080" 
     environment:
       - SPRING_ELASTICSEARCH_URIS=http://elasticsearch-mila:9200
+      - SPRING_DATA_REDIS_HOST=redis-mila
+      - SPRING_DATA_REDIS_PORT=6379
     depends_on:
       elasticsearch-mila:
         condition: service_healthy
+      redis-mila:
+        condition: service_healthy
     networks:
       - autoskola-network
- 
 
+  redis-mila:
+      image: redis:7-alpine
+      container_name: redis-mila
+      ports:
+        - "6380:6379"
+      networks:
+        - autoskola-network
+      healthcheck:
+        test: ["CMD", "redis-cli", "ping"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
 
 networks:
   autoskola-network:

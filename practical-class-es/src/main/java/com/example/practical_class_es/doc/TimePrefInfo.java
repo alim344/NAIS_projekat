@@ -1,9 +1,13 @@
 package com.example.practical_class_es.doc;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
-public class TimePrefInfo {
+import java.io.Serializable;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class TimePrefInfo implements Serializable {
 
     @Field(type = FieldType.Keyword)
     private String date;
