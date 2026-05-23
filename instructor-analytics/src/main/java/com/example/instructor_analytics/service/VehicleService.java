@@ -69,7 +69,7 @@ public class VehicleService {
                 .lessThanEqual(futureDate);
 
         if (status != null && !status.isEmpty()) {
-            criteria = criteria.and(new Criteria("status")).is(status);
+            criteria = criteria.and(new Criteria("status").is(status));
         }
 
         CriteriaQuery query = new CriteriaQuery(criteria);

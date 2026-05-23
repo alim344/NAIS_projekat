@@ -10,6 +10,8 @@ import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
+
+import java.time.LocalDate;
 import java.util.*;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
@@ -72,8 +74,6 @@ public class InstructorService {
             String searchText,
             int maxResults) {
 
-        System.out.println("⏺ Izvršavam upit nad Elasticsearch-om (nije iz keša)");
-
         List<Query> mustQueries = new ArrayList<>();
 
         if (category != null && !category.isEmpty()) {
@@ -114,6 +114,10 @@ public class InstructorService {
 
         List<InstructorDocument> instructorsWithFreeSpots = allInstructors.stream()
                 .filter(i -> i.getCurrentCandidateCount() < i.getMaxCapacity())
+                .filter(i -> {
+                    if (i.getLicenseExpiryDate() == null) return false;
+                    return i.getLicenseExpiryDate().isAfter(LocalDate.now());
+                })
                 .collect(Collectors.toList());
 
         instructorsWithFreeSpots.sort((a, b) -> {
