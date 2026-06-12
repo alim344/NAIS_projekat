@@ -1,9 +1,17 @@
 package com.example.instructor_analytics.service;
 
+import co.elastic.clients.elasticsearch._types.SortOptions;
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.json.JsonData;
 import com.example.instructor_analytics.model.VehicleDocument;
 import com.example.instructor_analytics.repository.VehicleRepository;
-import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.elasticsearch.client.elc.ElasticsearchAggregations;
+import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
@@ -18,12 +26,14 @@ import java.util.stream.Collectors;
 
 
 @Service
-@AllArgsConstructor
 public class VehicleService {
 
-    private final VehicleRepository vehicleRepository;
-    private final ElasticsearchOperations elasticsearchOperations;
-    private final RedisCacheService redisCacheService;
+    @Autowired
+    private VehicleRepository vehicleRepository;
+    @Autowired
+    private  ElasticsearchOperations elasticsearchOperations;
+    @Autowired
+    private  RedisCacheService redisCacheService;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
@@ -42,6 +52,10 @@ public class VehicleService {
     public VehicleDocument updateVehicle(String id, VehicleDocument updated) {
         updated.setId(id);
         return vehicleRepository.save(updated);
+    }
+
+    public void deleteAll() {
+        vehicleRepository.deleteAll();
     }
 
     public void deleteVehicle(String id) {
@@ -64,35 +78,66 @@ public class VehicleService {
         String today = LocalDate.now().format(DATE_FORMATTER);
         String futureDate = LocalDate.now().plusDays(daysAhead).format(DATE_FORMATTER);
 
-        Criteria criteria = new Criteria("registrationExpiryDate")
-                .greaterThanEqual(today)
-                .lessThanEqual(futureDate);
+        List<Query> filterQueries = new ArrayList<>();
+
+        filterQueries.add(Query.of(q -> q
+                .range(r -> r
+                        .field("registrationExpiryDate")
+                        .gte(JsonData.of(today))
+                        .lte(JsonData.of(futureDate))
+                )
+        ));
 
         if (status != null && !status.isEmpty()) {
-            criteria = criteria.and(new Criteria("status").is(status));
+            filterQueries.add(Query.of(q -> q
+                    .term(t -> t
+                            .field("status")
+                            .value(status)
+                    )
+            ));
         }
 
-        CriteriaQuery query = new CriteriaQuery(criteria);
-        query.setMaxResults(1000);
+        BoolQuery boolQuery = BoolQuery.of(b -> b
+                .filter(filterQueries)
+        );
+
+        SortOptions sort = SortOptions.of(so -> so
+                .field(f -> f
+                        .field("registrationExpiryDate")
+                        .order(SortOrder.Asc)
+                )
+        );
+
+        NativeQuery query = NativeQuery.builder()
+                .withQuery(Query.of(q -> q.bool(boolQuery)))
+                .withSort(sort)
+                .withAggregation("countByStatus", Aggregation.of(a -> a
+                        .terms(t -> t
+                                .field("status")
+                        )
+                ))
+                .withMaxResults(1000)
+                .build();
 
         SearchHits<VehicleDocument> searchHits = elasticsearchOperations.search(
                 query, VehicleDocument.class
         );
 
-        List<VehicleDocument> vehicles = searchHits.getSearchHits().stream()
-                .map(SearchHit::getContent)
-                .collect(Collectors.toList());
+        ElasticsearchAggregations aggs = (ElasticsearchAggregations) searchHits.getAggregations();
+        Map<String, Long> countByStatus = new HashMap<>();
+        if (aggs != null) {
+            aggs.aggregations().stream()
+                    .filter(a -> a.aggregation().getName().equals("countByStatus"))
+                    .findFirst()
+                    .ifPresent(a -> {
+                        a.aggregation().getAggregate().sterms().buckets().array()
+                                .forEach(bucket -> countByStatus.put(bucket.key().stringValue(), bucket.docCount()));
+                    });
+        }
 
-        vehicles.sort(Comparator.comparing(VehicleDocument::getRegistrationExpiryDate));
-
-        Map<String, Long> countByStatus = vehicles.stream()
-                .collect(Collectors.groupingBy(
-                        VehicleDocument::getStatus,
-                        Collectors.counting()
-                ));
-
-        List<Map<String, Object>> vehicleList = vehicles.stream()
-                .map(v -> {
+        List<Map<String, Object>> vehicleList = searchHits.getSearchHits().stream()
+                .map(hit -> {
+                    VehicleDocument v = hit.getContent();
                     Map<String, Object> map = new HashMap<>();
                     map.put("id", v.getId());
                     map.put("registrationNumber", v.getRegistrationNumber());
@@ -109,7 +154,7 @@ public class VehicleService {
         Map<String, Object> response = new HashMap<>();
         response.put("daysAhead", daysAhead);
         response.put("statusFilter", status != null ? status : "all");
-        response.put("totalVehiclesFound", vehicles.size());
+        response.put("totalVehiclesFound", searchHits.getTotalHits());
         response.put("countByStatus", countByStatus);
         response.put("vehicles", vehicleList);
 
@@ -123,6 +168,7 @@ public class VehicleService {
      * - Prikaz samo za brend koji korisnik unese
      * - Opcioni filteri: status, minimalna kilometraza
      * - Prosecna kilometraza, broj vozila, ukupna kilometraza
+     * - Sortiranje: po totalnoj kilometrazi (opadajuce)
      */
     @Cacheable(value = "vehicles", key = "'stats:' + #brand + ':' + (#status != null ? #status : 'all') + ':' + (#minMileage != null ? #minMileage : 'none')", unless = "#result == null")
     public Map<String, Object> getVehicleStatisticsByBrand(
@@ -130,38 +176,82 @@ public class VehicleService {
             String status,
             Integer minMileage) {
 
-        Criteria criteria = new Criteria("brand").is(brand);
+        List<Query> mustQueries = new ArrayList<>();
+        List<Query> filterQueries = new ArrayList<>();
+
+        mustQueries.add(Query.of(q -> q
+                .match(m -> m
+                        .field("brand")
+                        .query(brand)
+                )
+        ));
 
         if (status != null && !status.isEmpty()) {
-            criteria = criteria.and(new Criteria("status").is(status));
+            filterQueries.add(Query.of(q -> q
+                    .term(t -> t
+                            .field("status")
+                            .value(status)
+                    )
+            ));
         }
 
         if (minMileage != null) {
-            criteria = criteria.and(new Criteria("currentMileage").greaterThanEqual(minMileage));
+            filterQueries.add(Query.of(q -> q
+                    .range(r -> r
+                            .field("currentMileage")
+                            .gte(JsonData.of(minMileage))
+                    )
+            ));
         }
 
-        CriteriaQuery query = new CriteriaQuery(criteria);
-        query.setMaxResults(1000);
+        BoolQuery boolQuery = BoolQuery.of(b -> b
+                .must(mustQueries)
+                .filter(filterQueries)
+        );
+
+        SortOptions sort = SortOptions.of(so -> so
+                .field(f -> f
+                        .field("currentMileage")
+                        .order(SortOrder.Asc)
+                )
+        );
+
+        NativeQuery query = NativeQuery.builder()
+                .withQuery(Query.of(q -> q.bool(boolQuery)))
+                .withSort(sort)
+                .withAggregation("avgMileage", Aggregation.of(a -> a
+                        .avg(av -> av.field("currentMileage"))
+                ))
+                .withAggregation("totalMileage", Aggregation.of(a -> a
+                        .sum(s -> s.field("currentMileage"))
+                ))
+                .withMaxResults(1000)
+                .build();
 
         SearchHits<VehicleDocument> searchHits = elasticsearchOperations.search(
                 query, VehicleDocument.class
         );
 
-        List<VehicleDocument> vehicles = searchHits.getSearchHits().stream()
-                .map(SearchHit::getContent)
-                .collect(Collectors.toList());
+        ElasticsearchAggregations aggs = (ElasticsearchAggregations) searchHits.getAggregations();
+        double avgMileage = 0;
+        double totalMileage = 0;
+        if (aggs != null) {
+            avgMileage = aggs.aggregations().stream()
+                    .filter(a -> a.aggregation().getName().equals("avgMileage"))
+                    .findFirst()
+                    .map(a -> a.aggregation().getAggregate().avg().value())
+                    .orElse(0.0);
 
-        double avgMileage = vehicles.stream()
-                .mapToInt(VehicleDocument::getCurrentMileage)
-                .average()
-                .orElse(0.0);
+            totalMileage = aggs.aggregations().stream()
+                    .filter(a -> a.aggregation().getName().equals("totalMileage"))
+                    .findFirst()
+                    .map(a -> a.aggregation().getAggregate().sum().value())
+                    .orElse(0.0);
+        }
 
-        int totalMileage = vehicles.stream()
-                .mapToInt(VehicleDocument::getCurrentMileage)
-                .sum();
-
-        List<Map<String, Object>> vehicleList = vehicles.stream()
-                .map(v -> {
+        List<Map<String, Object>> vehicleList = searchHits.getSearchHits().stream()
+                .map(hit -> {
+                    VehicleDocument v = hit.getContent();
                     Map<String, Object> map = new HashMap<>();
                     map.put("id", v.getId());
                     map.put("registrationNumber", v.getRegistrationNumber());
@@ -173,16 +263,15 @@ public class VehicleService {
                     map.put("instructorLastname", v.getInstructorLastname());
                     return map;
                 })
-                .sorted(Comparator.comparingInt(v -> (Integer) v.get("currentMileage")))
                 .collect(Collectors.toList());
 
         Map<String, Object> response = new HashMap<>();
         response.put("brand", brand);
         response.put("statusFilter", status != null ? status : "all");
         response.put("minMileageFilter", minMileage != null ? minMileage : "none");
-        response.put("totalVehiclesFound", vehicles.size());
+        response.put("totalVehiclesFound", searchHits.getTotalHits());
         response.put("averageMileage", Math.round(avgMileage));
-        response.put("totalMileage", totalMileage);
+        response.put("totalMileage", (long) totalMileage);
         response.put("vehicles", vehicleList);
 
         return response;

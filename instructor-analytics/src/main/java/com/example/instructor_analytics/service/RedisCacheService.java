@@ -1,15 +1,15 @@
 package com.example.instructor_analytics.service;
 
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.TimeUnit;
 
 @Service
-@RequiredArgsConstructor
 public class RedisCacheService {
-    private final RedisTemplate<String, Object> redisTemplate;
+    @Autowired
+    private  RedisTemplate<String, Object> redisTemplate;
 
     public void save(String key, Object value, long ttlMinutes) {
         redisTemplate.opsForValue().set(key, value, ttlMinutes, TimeUnit.MINUTES);

@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Component
 public class DataLoader implements CommandLineRunner {
@@ -22,142 +21,155 @@ public class DataLoader implements CommandLineRunner {
     private VehicleService vehicleService;
 
     private final Random random = new Random();
-    private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-    private static final List<InstructorData> INSTRUCTOR_DATA = Arrays.asList(
-            new InstructorData("Marko", "Petrović", "marko.petrovic@autoskola.rs", 5, "C", Arrays.asList("B", "BE"), "DIPLOMA ZA INSTRUKTORA, SERTIFIKAT ZA PRVU POMOĆ", "2027-05-15"),
-            new InstructorData("Ana", "Jovanović", "ana.jovanovic@autoskola.rs", 3, "B", Arrays.asList("B", "A"), "INSTRUKTORSKA LICENCA B KATEGORIJE", "2026-12-10"),
-            new InstructorData("Stefan", "Nikolić", "stefan.nikolic@autoskola.rs", 8, "CE", Arrays.asList("C", "CE", "BE"), "SERTIFIKAT ZA KAMIONE, DIPLOMA ZA INSTRUKTORA", "2025-08-20"),
-            new InstructorData("Jovana", "Marković", "jovana.markovic@autoskola.rs", 2, "B", Arrays.asList("B", "BE"), "INSTRUKTORSKA LICENCA, SERTIFIKAT ZA VOŽNJU U NOĆNIM USLOVIMA", "2028-03-01"),
-            new InstructorData("Nikola", "Đorđević", "nikola.djordjevic@autoskola.rs", 10, "D", Arrays.asList("D", "DE", "B"), "DIPLOMA ZA INSTRUKTORA, SERTIFIKAT ZA PRVU POMOĆ, VOZAČKA DOZVOLA D KATEGORIJE", "2024-11-30"),
-            new InstructorData("Maja", "Stojanović", "maja.stojanovic@autoskola.rs", 4, "B", Arrays.asList("B", "BE", "A"), "INSTRUKTORSKA LICENCA, SERTIFIKAT ZA RAD SA POČETNICIMA", "2027-09-14"),
-            new InstructorData("Milan", "Ilić", "milan.ilic@autoskola.rs", 6, "C", Arrays.asList("C", "CE"), "SERTIFIKAT ZA TERETNA VOZILA, DIPLOMA ZA INSTRUKTORA", "2026-06-22"),
-            new InstructorData("Jelena", "Pavlović", "jelena.pavlovic@autoskola.rs", 1, "B", Arrays.asList("B"), "INSTRUKTORSKA LICENCA", "2029-01-05"),
-            new InstructorData("Petar", "Milošević", "petar.milosevic@autoskola.rs", 12, "BE", Arrays.asList("B", "BE", "C"), "DIPLOMA ZA INSTRUKTORA, SERTIFIKAT ZA VOŽNJU SA PRIKOLICOM", "2025-04-18"),
-            new InstructorData("Ivana", "Todorović", "ivana.todorovic@autoskola.rs", 7, "A", Arrays.asList("A", "A2", "B"), "INSTRUKTORSKA LICENCA ZA MOTOCIKLE, SERTIFIKAT ZA PRVU POMOĆ", "2028-07-30"),
-            new InstructorData("Vladimir", "Kovačević", "vladimir.kovacevic@autoskola.rs", 9, "D", Arrays.asList("D", "DE", "B"), "DIPLOMA ZA INSTRUKTORA ZA AUTOBUSE, SERTIFIKAT ZA PRVU POMOĆ", "2024-09-12"),
-            new InstructorData("Tamara", "Popović", "tamara.popovic@autoskola.rs", 3, "B", Arrays.asList("B", "BE", "A"), "INSTRUKTORSKA LICENCA, SERTIFIKAT ZA RAD SA OSOBAMA SA POSEBNIM POTREBAMA", "2027-11-20"),
-            new InstructorData("Uroš", "Savić", "uros.savic@autoskola.rs", 11, "CE", Arrays.asList("C", "CE", "BE"), "DIPLOMA ZA INSTRUKTORA, SERTIFIKAT ZA VOŽNJU U TEŠKIM USLOVIMA", "2025-02-28"),
-            new InstructorData("Milica", "Kostić", "milica.kostic@autoskola.rs", 5, "B", Arrays.asList("B"), "INSTRUKTORSKA LICENCA, SERTIFIKAT ZA PRVU POMOĆ", "2028-12-15"),
-            new InstructorData("Nenad", "Lukić", "nenad.lukic@autoskola.rs", 15, "DE", Arrays.asList("D", "DE", "B", "BE"), "DIPLOMA ZA INSTRUKTORA, SERTIFIKAT ZA PRVU POMOĆ, VOZAČKA DOZVOLA DE KATEGORIJE", "2024-04-01"),
-            new InstructorData("Kristina", "Radovanović", "kristina.radovanovic@autoskola.rs", 2, "A", Arrays.asList("A", "A1", "A2"), "INSTRUKTORSKA LICENCA ZA MOTOCIKLE", "2029-06-18"),
-            new InstructorData("Filip", "Vuković", "filip.vukovic@autoskola.rs", 6, "C", Arrays.asList("C", "CE", "B"), "SERTIFIKAT ZA TERETNA VOZILA, DIPLOMA ZA INSTRUKTORA", "2027-10-03"),
-            new InstructorData("Sandra", "Đukić", "sandra.djukic@autoskola.rs", 4, "B", Arrays.asList("B", "BE"), "INSTRUKTORSKA LICENCA, SERTIFIKAT ZA VOŽNJU U GRADSKOJ VOŽNJI", "2028-08-25"),
-            new InstructorData("Dejan", "Mladenović", "dejan.mladenovic@autoskola.rs", 13, "DE", Arrays.asList("D", "DE", "C", "CE"), "DIPLOMA ZA INSTRUKTORA, SERTIFIKAT ZA PRVU POMOĆ, VOZAČKA DOZVOLA DE KATEGORIJE", "2025-01-19"),
-            new InstructorData("Nina", "Simić", "nina.simic@autoskola.rs", 3, "B", Arrays.asList("B", "A"), "INSTRUKTORSKA LICENCA, SERTIFIKAT ZA RAD SA POČETNICIMA", "2029-03-27")
-    );
-
-    private static final List<VehicleData> VEHICLE_DATA = Arrays.asList(
-            new VehicleData("NS-101-AB", "AVAILABLE", 45000, "2026-05-15", "Volkswagen", "Marko", "Petrović"),
-            new VehicleData("NS-102-AB", "IN_USE", 32000, "2025-11-20", "Renault", "Ana", "Jovanović"),
-            new VehicleData("NS-103-AB", "AVAILABLE", 89000, "2024-08-10", "Fiat", "Stefan", "Nikolić"),
-            new VehicleData("NS-104-AB", "OUT_OF_SERVICE", 120000, "2024-12-01", "Opel", "Jovana", "Marković"),
-            new VehicleData("NS-105-AB", "AVAILABLE", 25000, "2027-03-15", "Ford", "Nikola", "Đorđević"),
-            new VehicleData("NS-106-AB", "IN_USE", 67000, "2026-09-30", "Toyota", "Maja", "Stojanović"),
-            new VehicleData("NS-107-AB", "AVAILABLE", 54000, "2025-07-22", "Škoda", "Milan", "Ilić"),
-            new VehicleData("NS-108-AB", "AVAILABLE", 8900, "2029-01-14", "Peugeot", "Jelena", "Pavlović"),
-            new VehicleData("NS-109-AB", "IN_USE", 156000, "2024-06-08", "Volkswagen", "Petar", "Milošević"),
-            new VehicleData("NS-110-AB", "AVAILABLE", 78000, "2027-10-12", "Renault", "Ivana", "Todorović"),
-            new VehicleData("NS-111-AB", "OUT_OF_SERVICE", 210000, "2024-03-20", "Fiat", "Vladimir", "Kovačević"),
-            new VehicleData("NS-112-AB", "AVAILABLE", 34000, "2028-05-05", "Ford", "Tamara", "Popović"),
-            new VehicleData("NS-113-AB", "IN_USE", 112000, "2025-12-18", "Opel", "Uroš", "Savić"),
-            new VehicleData("NS-114-AB", "AVAILABLE", 56000, "2026-08-27", "Toyota", "Milica", "Kostić"),
-            new VehicleData("NS-115-AB", "IN_USE", 89000, "2024-10-07", "Škoda", "Nenad", "Lukić"),
-            new VehicleData("NS-116-AB", "AVAILABLE", 23000, "2028-11-11", "Peugeot", "Kristina", "Radovanović"),
-            new VehicleData("NS-117-AB", "AVAILABLE", 67000, "2027-02-14", "Volkswagen", "Filip", "Vuković"),
-            new VehicleData("NS-118-AB", "IN_USE", 45000, "2026-07-09", "Renault", "Sandra", "Đukić"),
-            new VehicleData("NS-119-AB", "AVAILABLE", 123000, "2025-04-03", "Fiat", "Dejan", "Mladenović"),
-            new VehicleData("NS-120-AB", "OUT_OF_SERVICE", 187000, "2024-09-25", "Opel", "Nina", "Simić")
-    );
+    private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     @Override
     public void run(String... args) throws Exception {
         System.out.println("DataLoader started...");
 
-        if (instructorService.countInstructors() >= 20) {
-            System.out.println("Podaci vec postoje (20+ instruktora), preskacemo ucitavanje.");
-            return;
-        }
+      //  instructorService.deleteAll();
+      //  vehicleService.deleteAll();
 
-        System.out.println("Unosimo test podatke za auto skolu...");
+        System.out.println("Stari podaci obrisani, unosimo nove...");
 
-       // instructorService.deleteAll();
-       // vehicleService.deleteAll();
+        loadInstructors();
+        loadVehicles();
 
-        for (InstructorData data : INSTRUCTOR_DATA) {
+        System.out.println("Test podaci uspesno uneti!");
+    }
+
+    private void loadInstructors() {
+        String[] names = {"Marko", "Ana", "Stefan", "Jovana", "Nikola", "Maja", "Milan", "Jelena",
+                "Petar", "Ivana", "Vladimir", "Tamara", "Uroš", "Milica", "Nenad", "Kristina",
+                "Filip", "Sandra", "Dejan", "Nina", "Luka", "Tijana", "Nemanja", "Bojana",
+                "Aleksandar", "Vesna", "Dragan", "Snežana", "Igor", "Dragana"};
+        String[] lastNames = {"Petrović", "Jovanović", "Nikolić", "Marković", "Đorđević", "Stojanović",
+                "Ilić", "Pavlović", "Milošević", "Todorović", "Kovačević", "Popović", "Savić",
+                "Kostić", "Lukić", "Radovanović", "Vuković", "Đukić", "Mladenović", "Simić"};
+
+        String[] documentTypes = {
+                "INSTRUKTORSKA LICENCA B KATEGORIJE",
+                "DIPLOMA ZA INSTRUKTORA, SERTIFIKAT ZA PRVU POMOĆ",
+                "SERTIFIKAT ZA KAMIONE, DIPLOMA ZA INSTRUKTORA",
+                "INSTRUKTORSKA LICENCA, SERTIFIKAT ZA VOŽNJU U NOĆNIM USLOVIMA",
+                "DIPLOMA ZA INSTRUKTORA, SERTIFIKAT ZA PRVU POMOĆ, VOZAČKA DOZVOLA D KATEGORIJE",
+                "INSTRUKTORSKA LICENCA, SERTIFIKAT ZA RAD SA POČETNICIMA",
+                "SERTIFIKAT ZA TERETNA VOZILA, DIPLOMA ZA INSTRUKTORA",
+                "INSTRUKTORSKA LICENCA ZA MOTOCIKLE, SERTIFIKAT ZA PRVU POMOĆ",
+                "DIPLOMA ZA INSTRUKTORA ZA AUTOBUSE, SERTIFIKAT ZA PRVU POMOĆ",
+                "INSTRUKTORSKA LICENCA, SERTIFIKAT ZA RAD SA OSOBAMA SA POSEBNIM POTREBAMA"
+        };
+
+        Category[][] categoryGroups = {
+                {Category.B},
+                {Category.B, Category.BE},
+                {Category.B, Category.A},
+                {Category.C, Category.CE},
+                {Category.C, Category.CE, Category.BE},
+                {Category.D, Category.DE, Category.B},
+                {Category.A, Category.A2, Category.B},
+                {Category.D, Category.DE, Category.C, Category.CE},
+                {Category.B, Category.BE, Category.A},
+                {Category.A, Category.A1, Category.A2}
+        };
+
+        for (int i = 0; i < 500; i++) {
             InstructorDocument instructor = new InstructorDocument();
             instructor.setId(UUID.randomUUID().toString());
-            instructor.setName(data.name);
-            instructor.setLastName(data.lastName);
-            instructor.setEmail(data.email);
-            instructor.setMaxCapacity(data.maxCapacity);
-            instructor.setCurrentCandidateCount(random.nextInt(data.maxCapacity)); // 0 do maxCapacity-1
+
+            String name = names[random.nextInt(names.length)];
+            String lastName = lastNames[random.nextInt(lastNames.length)];
+            instructor.setName(name);
+            instructor.setLastName(lastName);
+            instructor.setEmail(name.toLowerCase() + "." + lastName.toLowerCase() + i + "@autoskola.rs");
+
+            int maxCapacity = 2 + random.nextInt(14); // 2-15
+            instructor.setMaxCapacity(maxCapacity);
+
+            int currentCount;
+            if (random.nextInt(10) < 6) {
+                currentCount = random.nextInt(maxCapacity);
+            } else {
+                currentCount = maxCapacity; // puno
+            }
+            instructor.setCurrentCandidateCount(currentCount);
+
             instructor.setVehicleRegistrationNumber(generateRegistrationNumber());
-            instructor.setDocumentTypes(data.documentTypes);
-            instructor.setLicenseExpiryDate(LocalDate.parse(data.licenseExpiryDate));
-            List<Category> categoryEnums = data.categories.stream()
-                    .map(Category::valueOf)
-                    .collect(Collectors.toList());
-            instructor.setCategories(categoryEnums);
+            instructor.setDocumentTypes(documentTypes[random.nextInt(documentTypes.length)]);
+
+            LocalDate licenseDate;
+            if (random.nextInt(10) < 7) {
+                licenseDate = LocalDate.now().plusDays(30 + random.nextInt(1800));
+            } else {
+                licenseDate = LocalDate.now().minusDays(1 + random.nextInt(365));
+            }
+            instructor.setLicenseExpiryDate(licenseDate);
+
+            instructor.setCategories(Arrays.asList(categoryGroups[random.nextInt(categoryGroups.length)]));
 
             instructorService.saveInstructor(instructor);
         }
 
-        for (VehicleData data : VEHICLE_DATA) {
+        System.out.println("500 instruktora uneto.");
+    }
+
+    private void loadVehicles() {
+        String[] brands = {"Volkswagen", "Renault", "Fiat", "Opel", "Ford",
+                "Toyota", "Škoda", "Peugeot", "BMW", "Hyundai"};
+        String[] statuses = {"AVAILABLE", "IN_USE", "OUT_OF_SERVICE"};
+        int[] statusWeights = {5, 4, 1};
+
+        String[] instructorNames = {"Marko", "Ana", "Stefan", "Jovana", "Nikola",
+                "Maja", "Milan", "Jelena", "Petar", "Ivana"};
+        String[] instructorLastNames = {"Petrović", "Jovanović", "Nikolić", "Marković", "Đorđević",
+                "Stojanović", "Ilić", "Pavlović", "Milošević", "Todorović"};
+
+        for (int i = 0; i < 500; i++) {
             VehicleDocument vehicle = new VehicleDocument();
             vehicle.setId(UUID.randomUUID().toString());
-            vehicle.setRegistrationNumber(data.registrationNumber);
-            vehicle.setStatus(data.status);
-            vehicle.setCurrentMileage(data.currentMileage);
-            vehicle.setRegistrationExpiryDate(data.registrationExpiryDate);
-            vehicle.setBrand(data.brand);
-            vehicle.setInstructorName(data.instructorName);
-            vehicle.setInstructorLastname(data.instructorLastname);
+
+            String city = new String[]{"NS", "BG", "NI", "KG", "SU"}[random.nextInt(5)];
+            int num = 100 + random.nextInt(900);
+            String letters = "" + (char)('A' + random.nextInt(26)) + (char)('A' + random.nextInt(26));
+            vehicle.setRegistrationNumber(city + "-" + num + "-" + letters + "-" + i);
+
+            vehicle.setBrand(brands[random.nextInt(brands.length)]);
+
+            int statusRoll = random.nextInt(10);
+            String status;
+            if (statusRoll < 5) status = "AVAILABLE";
+            else if (statusRoll < 9) status = "IN_USE";
+            else status = "OUT_OF_SERVICE";
+            vehicle.setStatus(status);
+
+            vehicle.setCurrentMileage(5000 + random.nextInt(245000));
+
+            LocalDate expiryDate;
+            int scenario = random.nextInt(10);
+            if (scenario < 2) {
+                expiryDate = LocalDate.now().plusDays(1 + random.nextInt(30));
+            } else if (scenario < 5) {
+                expiryDate = LocalDate.now().plusDays(30 + random.nextInt(150));
+            } else {
+                expiryDate = LocalDate.now().plusDays(180 + random.nextInt(900));
+            }
+            vehicle.setRegistrationExpiryDate(expiryDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+
+            int idx = random.nextInt(instructorNames.length);
+            vehicle.setInstructorName(instructorNames[idx]);
+            vehicle.setInstructorLastname(instructorLastNames[idx]);
 
             vehicleService.saveVehicle(vehicle);
         }
 
-        System.out.println("Test podaci uspesno uneti!");
+        System.out.println("500 vozila uneto.");
     }
 
     private String generateRegistrationNumber() {
         String[] cities = {"NS", "BG", "NI", "KG", "SU"};
         String city = cities[random.nextInt(cities.length)];
         int number = 100 + random.nextInt(900);
-        String letters = "" + (char) ('A' + random.nextInt(26)) + (char) ('A' + random.nextInt(26));
+        String letters = "" + (char)('A' + random.nextInt(26)) + (char)('A' + random.nextInt(26));
         return city + "-" + number + "-" + letters;
-    }
-
-    private static class InstructorData {
-        String name, lastName, email, licenseExpiryDate, documentTypes;
-        int maxCapacity;
-        List<String> categories;
-
-        InstructorData(String name, String lastName, String email, int maxCapacity, String licenseCategory,
-                       List<String> categories, String documentTypes, String licenseExpiryDate) {
-            this.name = name;
-            this.lastName = lastName;
-            this.email = email;
-            this.maxCapacity = maxCapacity;
-            this.licenseExpiryDate = licenseExpiryDate;
-            this.documentTypes = documentTypes;
-            this.categories = categories;
-        }
-    }
-
-    private static class VehicleData {
-        String registrationNumber, status, registrationExpiryDate, brand, instructorName, instructorLastname;
-        int currentMileage;
-
-        VehicleData(String registrationNumber, String status, int currentMileage,
-                    String registrationExpiryDate, String brand, String instructorName, String instructorLastname) {
-            this.registrationNumber = registrationNumber;
-            this.status = status;
-            this.currentMileage = currentMileage;
-            this.registrationExpiryDate = registrationExpiryDate;
-            this.brand = brand;
-            this.instructorName = instructorName;
-            this.instructorLastname = instructorLastname;
-        }
     }
 }

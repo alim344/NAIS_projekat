@@ -1,9 +1,5 @@
 package com.example.instructor_analytics.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.DateFormat;
 import org.springframework.data.elasticsearch.annotations.Document;
@@ -14,10 +10,6 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Document(indexName = "instructors")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
 public class InstructorDocument {
 
     @Id
@@ -49,4 +41,85 @@ public class InstructorDocument {
 
     @Field(type = FieldType.Keyword)
     private List<Category> categories;
+
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public Integer getMaxCapacity() {
+        return maxCapacity;
+    }
+
+    public void setMaxCapacity(Integer maxCapacity) {
+        this.maxCapacity = maxCapacity;
+    }
+
+    public Integer getCurrentCandidateCount() {
+        return currentCandidateCount;
+    }
+
+    public void setCurrentCandidateCount(Integer currentCandidateCount) {
+        this.currentCandidateCount = currentCandidateCount;
+    }
+
+    public String getVehicleRegistrationNumber() {
+        return vehicleRegistrationNumber;
+    }
+
+    public void setVehicleRegistrationNumber(String vehicleRegistrationNumber) {
+        this.vehicleRegistrationNumber = vehicleRegistrationNumber;
+    }
+
+    public String getDocumentTypes() {
+        return documentTypes;
+    }
+
+    public void setDocumentTypes(String documentTypes) {
+        this.documentTypes = documentTypes;
+    }
+
+    public LocalDate getLicenseExpiryDate() {
+        return licenseExpiryDate;
+    }
+
+    public void setLicenseExpiryDate(LocalDate licenseExpiryDate) {
+        this.licenseExpiryDate = licenseExpiryDate;
+    }
+
+    public List<Category> getCategories() {
+        return categories;
+    }
+
+    public void setCategories(List<Category> categories) {
+        this.categories = categories;
+    }
 }
