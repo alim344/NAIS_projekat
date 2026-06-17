@@ -10,5 +10,5 @@ RUN ./mvnw dependency:go-offline -B
 COPY src ./src
 RUN ./mvnw package -DskipTests
 
-EXPOSE 9090
-ENTRYPOINT ["java", "-jar", "target/instructor-analytics-0.0.1-SNAPSHOT.jar"]
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "target/practical-class-es-0.0.1-SNAPSHOT.jar"]

@@ -2,7 +2,7 @@ package com.example.instructor_analytics.controller;
 
 import com.example.instructor_analytics.model.VehicleDocument;
 import com.example.instructor_analytics.service.VehicleService;
-import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,11 +12,10 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/vehicles")
-@AllArgsConstructor
 public class VehicleController {
 
-    private final VehicleService vehicleService;
-
+    @Autowired
+    private VehicleService vehicleService;
 
     @PostMapping
     public ResponseEntity<VehicleDocument> save(@RequestBody VehicleDocument vehicle) {

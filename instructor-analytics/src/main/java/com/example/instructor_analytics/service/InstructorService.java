@@ -1,32 +1,41 @@
 package com.example.instructor_analytics.service;
 
-import com.example.instructor_analytics.model.InstructorDocument;
-import com.example.instructor_analytics.repository.InstructorRepository;
-import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
-import org.springframework.data.elasticsearch.core.SearchHit;
-import org.springframework.stereotype.Service;
-
-import lombok.RequiredArgsConstructor;
-import java.util.*;
-
+import co.elastic.clients.elasticsearch._types.ScriptSortType;
+import co.elastic.clients.elasticsearch._types.SortOptions;
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.SumAggregate;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.json.JsonData;
+import com.example.instructor_analytics.model.InstructorDocument;
+import com.example.instructor_analytics.repository.InstructorRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.elasticsearch.client.elc.ElasticsearchAggregations;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
+import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
+import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import org.springframework.stereotype.Service;
+
+
+import java.time.LocalDate;
+import java.util.*;
 import java.util.stream.Collectors;
 
+
 @Service
-@RequiredArgsConstructor
 public class InstructorService {
 
-    private final InstructorRepository instructorRepository;
-
-    private final ElasticsearchOperations elasticsearchOperations;
-    private final RedisCacheService redisCacheService;
+    @Autowired
+    private InstructorRepository instructorRepository;
+    @Autowired
+    private  ElasticsearchOperations elasticsearchOperations;
+    @Autowired
+    private  RedisCacheService redisCacheService;
 
     public InstructorDocument saveInstructor(InstructorDocument instructor) {
         return instructorRepository.save(instructor);
@@ -40,9 +49,13 @@ public class InstructorService {
         return instructorRepository.findAll();
     }
 
-    public InstructorDocument updateInstructor(String id, InstructorDocument updated) {
+   public InstructorDocument updateInstructor(String id, InstructorDocument updated) {
         updated.setId(id);
         return instructorRepository.save(updated);
+    }
+
+    public void deleteAll() {
+        instructorRepository.deleteAll();
     }
 
     public void deleteInstructor(String id) {
@@ -58,89 +71,117 @@ public class InstructorService {
      * Pronadji instruktore koji:
      * - imaju slobodna mesta
      * - ciji dokumenti sadrze zadani tekst
-     * - cija licenca nije istekla
+     * - licenca nije istekla
      * - filter po kategoriji
      * Sortiranje: po broju slobodnih mesta opadajuce
      * Agregacija: ukupan broj slobodnih mesta
      */
-    public Map<String, Object> findAvailableInstructorsWithValidDocuments(
-            String category,
-            String searchText,
-            int maxResults) {
-
-        String cacheKey = "instructors:available:category:" + (category != null ? category : "all") + ":text:" + (searchText != null ? searchText : "none");
-        Object cached = redisCacheService.get(cacheKey);
-        if (cached != null) {
-            System.out.println("Podaci preuzeti iz Redis kesa: " + cacheKey);
-            return (Map<String, Object>) cached;
-        }
+    @Cacheable(value = "instructors", key = "#category + '_' + #searchText + '_'", unless = "#result == null")
+    public Map<String, Object> findAvailableInstructorsWithText(String searchText, String category) {
 
         List<Query> mustQueries = new ArrayList<>();
-
-        if (category != null && !category.isEmpty()) {
-            Query categoryQuery = Query.of(q -> q
-                    .term(t -> t
-                            .field("categories")
-                            .value(category)
-                    )
-            );
-            mustQueries.add(categoryQuery);
-        }
+        List<Query> filterQueries = new ArrayList<>();
 
         if (searchText != null && !searchText.isEmpty()) {
-            Query textQuery = Query.of(q -> q
+            mustQueries.add(Query.of(q -> q
                     .match(m -> m
                             .field("documentTypes")
                             .query(searchText)
                             .fuzziness("AUTO")
                     )
-            );
-            mustQueries.add(textQuery);
+            ));
         }
 
-        BoolQuery boolQuery = BoolQuery.of(b -> b.must(mustQueries));
+        filterQueries.add(Query.of(q -> q
+                .script(s -> s
+                        .script(sc -> sc
+                                .inline(i -> i
+                                        .source("doc['maxCapacity'].value > doc['currentCandidateCount'].value")
+                                        .lang("painless")
+                                )
+                        )
+                )
+        ));
+
+        String today = LocalDate.now().toString().replace("-", "");
+        filterQueries.add(Query.of(q -> q
+                .range(r -> r
+                        .field("licenseExpiryDate")
+                        .gt(JsonData.of(today))
+                )
+        ));
+
+        if (category != null && !category.isEmpty()) {
+            filterQueries.add(Query.of(q -> q
+                    .term(t -> t
+                            .field("categories")
+                            .value(category)
+                    )
+            ));
+        }
+
+        BoolQuery boolQuery = BoolQuery.of(b -> b
+                .must(mustQueries)
+                .filter(filterQueries)
+        );
+
+        // sort br. slobodnih mesta
+        SortOptions sort = SortOptions.of(so -> so
+                .script(ss -> ss
+                        .type(ScriptSortType.Number)
+                        .script(sc -> sc
+                                .inline(i -> i
+                                        .source("doc['maxCapacity'].value - doc['currentCandidateCount'].value")
+                                        .lang("painless")
+                                )
+                        )
+                        .order(SortOrder.Desc)
+                )
+        );
 
         NativeQuery query = NativeQuery.builder()
                 .withQuery(Query.of(q -> q.bool(boolQuery)))
-                .withMaxResults(1000)
+                .withSort(sort)
+                .withAggregation("totalFreeSpots", Aggregation.of(a -> a
+                        .sum(s -> s
+                                .script(sc -> sc
+                                        .inline(i -> i
+                                                .source("doc['maxCapacity'].value - doc['currentCandidateCount'].value")
+                                                .lang("painless")
+                                        )
+                                )
+                        )
+                ))
                 .build();
 
         SearchHits<InstructorDocument> searchHits = elasticsearchOperations.search(
                 query, InstructorDocument.class
         );
 
-        List<InstructorDocument> allInstructors = searchHits.getSearchHits().stream()
-                .map(SearchHit::getContent)
-                .collect(Collectors.toList());
-
-        List<InstructorDocument> instructorsWithFreeSpots = allInstructors.stream()
-                .filter(i -> i.getCurrentCandidateCount() < i.getMaxCapacity())
-                .collect(Collectors.toList());
-
-        instructorsWithFreeSpots.sort((a, b) -> {
-            int freeA = a.getMaxCapacity() - a.getCurrentCandidateCount();
-            int freeB = b.getMaxCapacity() - b.getCurrentCandidateCount();
-            return Integer.compare(freeB, freeA);
-        });
-
-        if (instructorsWithFreeSpots.size() > maxResults) {
-            instructorsWithFreeSpots = instructorsWithFreeSpots.subList(0, maxResults);
+        // agrg
+        ElasticsearchAggregations aggs = (ElasticsearchAggregations) searchHits.getAggregations();
+        double totalFreeSpots = 0;
+        if (aggs != null) {
+            SumAggregate sumAgg = aggs.aggregations().stream()
+                    .filter(a -> a.aggregation().getName().equals("totalFreeSpots"))
+                    .findFirst()
+                    .map(a -> a.aggregation().getAggregate().sum())
+                    .orElse(null);
+            if (sumAgg != null) {
+                totalFreeSpots = sumAgg.value();
+            }
         }
 
-        long totalFreeSpots = instructorsWithFreeSpots.stream()
-                .mapToLong(i -> i.getMaxCapacity() - i.getCurrentCandidateCount())
-                .sum();
-
-        List<Map<String, Object>> instructors = instructorsWithFreeSpots.stream()
-                .map(doc -> {
+        List<Map<String, Object>> instructors = searchHits.getSearchHits().stream()
+                .map(hit -> {
+                    InstructorDocument doc = hit.getContent();
                     Map<String, Object> map = new HashMap<>();
                     map.put("id", doc.getId());
                     map.put("name", doc.getName());
                     map.put("lastName", doc.getLastName());
                     map.put("email", doc.getEmail());
                     map.put("maxCapacity", doc.getMaxCapacity());
-                    int freeSpots = doc.getMaxCapacity() - doc.getCurrentCandidateCount();
-                    map.put("freeSpots", freeSpots);
+                    map.put("freeSpots", doc.getMaxCapacity() - doc.getCurrentCandidateCount());
                     map.put("vehicleRegistrationNumber", doc.getVehicleRegistrationNumber());
                     map.put("documentTypes", doc.getDocumentTypes());
                     map.put("categories", doc.getCategories());
@@ -155,10 +196,22 @@ public class InstructorService {
         response.put("totalInstructorsFound", instructors.size());
         response.put("instructors", instructors);
 
-        redisCacheService.save(cacheKey, response, 10);
-        System.out.println("Podaci sacuvani u Redis kes: " + cacheKey);
-
         return response;
+    }
+
+    @Cacheable(value = "instructors", key = "#id", unless = "#result == null")
+    public InstructorDocument findById(String id) {
+        return elasticsearchOperations.get(id, InstructorDocument.class);
+    }
+
+    @CachePut(value = "instructors", key = "#result.id")
+    public InstructorDocument save(InstructorDocument instructor) {
+        return elasticsearchOperations.save(instructor);
+    }
+
+    @CacheEvict(value = "instructors", key = "#id")
+    public void deleteById(String id) {
+        elasticsearchOperations.delete(id, InstructorDocument.class);
     }
 }
 

@@ -2,20 +2,21 @@ package com.example.instructor_analytics.controller;
 
 import com.example.instructor_analytics.model.InstructorDocument;
 import com.example.instructor_analytics.service.InstructorService;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/instructors")
-@RequiredArgsConstructor
 public class InstructorController {
 
-    private final InstructorService instructorService;
+    @Autowired
+    private InstructorService instructorService;
 
     @PostMapping
     public ResponseEntity<InstructorDocument> save(@RequestBody InstructorDocument instructor) {
@@ -47,14 +48,12 @@ public class InstructorController {
     }
 
     @GetMapping("/available")
-    public Map<String, Object> findAvailableInstructors(
-            @RequestParam(required = false) String category,
+    public ResponseEntity<Map<String, Object>> findAvailableInstructorsWithText(
             @RequestParam(required = false) String searchText,
-            @RequestParam(defaultValue = "20") int maxResults) {
+            @RequestParam(required = false) String category) {
 
-        return instructorService.findAvailableInstructorsWithValidDocuments(
-                category, searchText, maxResults
-        );
+        Map<String, Object> result = instructorService.findAvailableInstructorsWithText(searchText, category);
+        return ResponseEntity.ok(result);
     }
 
 
