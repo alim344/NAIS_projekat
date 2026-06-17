@@ -32,7 +32,8 @@ neo4j_sara_data/
 neo4j_data_tanja/
 neo4j_logs_tanja/
 elasticsearch_sara_data/
-redis_sara_data/dump.rdb
+elasticsearch_instructor_data/
+redis_sara_data/
 transactions/
 data/
 # IntelliJ & IDE
