@@ -62,6 +62,20 @@ public class VehicleService {
         vehicleRepository.deleteById(id);
     }
 
+    public VehicleDocument assignInstructorToVehicle(String registrationNumber,
+                                                     String instructorName,
+                                                     String instructorLastname) {
+        Optional<VehicleDocument> optionalVehicle = vehicleRepository.findByRegistrationNumber(registrationNumber);
+        if (optionalVehicle.isEmpty()) {
+            return null;
+        }
+        VehicleDocument vehicle = optionalVehicle.get();
+        vehicle.setInstructorName(instructorName);
+        vehicle.setInstructorLastname(instructorLastname);
+        vehicle.setStatus("IN_USE");
+        return vehicleRepository.save(vehicle);
+    }
+
 
     /**
      * COMPLEX QUERY 2:

@@ -84,8 +84,10 @@ services:
       - SPRING_NEO4J_AUTHENTICATION_USERNAME=neo4j
       - SPRING_NEO4J_AUTHENTICATION_PASSWORD=password123
       - SERVER_PORT=8080
+      - INSTRUCTOR_ANALYTICS_URL=http://instructor-analytics-service:9090
     depends_on:
       - neo4j-tanja
+      - instructor-analytics
     networks:
       - autoskola-network
 

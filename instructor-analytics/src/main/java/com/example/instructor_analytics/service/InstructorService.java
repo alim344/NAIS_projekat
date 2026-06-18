@@ -66,6 +66,46 @@ public class InstructorService {
         return instructorRepository.count();
     }
 
+    public InstructorDocument assignVehicleToInstructor(String instructorId, String registrationNumber) {
+        Optional<InstructorDocument> optionalInstructor = instructorRepository.findById(instructorId);
+        if (optionalInstructor.isEmpty()) {
+            return null;
+        }
+        InstructorDocument instructor = optionalInstructor.get();
+        instructor.setVehicleRegistrationNumber(registrationNumber);
+        return instructorRepository.save(instructor);
+    }
+
+    public InstructorDocument removeVehicleFromInstructor(String instructorId) {
+        Optional<InstructorDocument> optionalInstructor = instructorRepository.findById(instructorId);
+        if (optionalInstructor.isEmpty()) {
+            return null;
+        }
+        InstructorDocument instructor = optionalInstructor.get();
+        instructor.setVehicleRegistrationNumber(null);
+        return instructorRepository.save(instructor);
+    }
+
+    public InstructorDocument findByEmail(String email) {
+        NativeQuery query = NativeQuery.builder()
+                .withQuery(Query.of(q -> q
+                        .term(t -> t
+                                .field("email")
+                                .value(email)
+                        )
+                ))
+                .build();
+
+        SearchHits<InstructorDocument> searchHits = elasticsearchOperations.search(
+                query, InstructorDocument.class
+        );
+
+        return searchHits.getSearchHits().stream()
+                .map(SearchHit::getContent)
+                .findFirst()
+                .orElse(null);
+    }
+
     /**
      * COMPLEX QUERY 1:
      * Pronadji instruktore koji:
