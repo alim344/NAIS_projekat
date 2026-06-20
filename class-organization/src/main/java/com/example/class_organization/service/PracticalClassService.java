@@ -1,11 +1,18 @@
 package com.example.class_organization.service;
 
+import com.example.class_organization.config.RabbitConfig;
+import com.example.class_organization.dto.CompletedDTO;
 import com.example.class_organization.dto.PracticalClassDTO;
+import com.example.class_organization.model.Candidate;
 import com.example.class_organization.model.PracticalClass;
 import com.example.class_organization.repo.PracticalClassRepository;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.web.config.EnableSpringDataWebSupport;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.web.config.EnableSpringDataWebSupport;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,6 +28,10 @@ public class PracticalClassService {
     private CandidateService candidateService;
     @Autowired
     private InstructorService instructorService;
+
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+
 
 
     @Transactional
@@ -90,5 +101,78 @@ public class PracticalClassService {
     }
 
 
+    //SAGA
 
+    public void completeClass(Long classId, CompletedDTO req) {
+
+
+
+        PracticalClass pc = practicalClassRepository.findByClassId(classId).orElse(null);
+
+        if(pc == null){
+            System.out.println("There is no practical class like that sorrz error");
+            return;
+        }
+
+        pc.setCompleted(true);
+        practicalClassRepository.save(pc);
+
+        Candidate candidate = candidateService.getById(req.getCandidateId());
+
+        if(candidate == null){
+            System.out.println("There is no candidte under this id");
+            return;
+        }
+
+        candidateService.updateAttendanceByIds(req.getCandidateId(),classId, true, req.getKmDriven());
+
+
+
+        CompletedDTO dto = new CompletedDTO();
+        dto.setPracticalClassId(classId);
+        dto.setCandidateId(req.getCandidateId());
+        dto.setKmDriven(req.getKmDriven());
+        dto.setScore(req.getScore());
+        dto.setStartTime(pc.getStartTime());
+        dto.setEndTime(pc.getEndTime());
+        dto.setInstructorNote(req.getInstructorNote());
+
+        System.out.println("Slanje poruke na RabbitMQ...-----------------------------------------------------*");
+        rabbitTemplate.convertAndSend(
+                RabbitConfig.CLASS_EVENTS_EXCHANGE,
+                "class.completed",
+                dto
+        );
+    }
+
+    @RabbitListener(queues = RabbitConfig.ROLLBACK_QUEUE)
+    public void handleRollback(CompletedDTO event) {
+        PracticalClass pc = practicalClassRepository
+                .findById(event.getPracticalClassId())
+                .orElse(null);
+
+        if (pc != null) {
+            pc.setCompleted(false);
+            practicalClassRepository.save(pc);
+            System.out.println("ROLLBACK: class  not documented");
+        }
+
+        Candidate candidate = candidateService.getById(event.getCandidateId());
+        /*if (candidate != null) {
+            candidate.getAttendanceList().stream()
+                    .filter(a -> a.getPracticalClass().getId().equals(event.getPracticalClassId()))
+                    .findFirst()
+                    .ifPresent(a -> {
+                        a.setPresent(false);
+                        a.setKmDriven(0);
+                    });
+            candidateService.save(candidate);*/
+        candidateService.updateAttendanceByIds(event.getCandidateId(), event.getPracticalClassId(), false, 0);
+
+    }
 }
+
+
+
+
+

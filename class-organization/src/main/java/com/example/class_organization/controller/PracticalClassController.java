@@ -1,5 +1,6 @@
 package com.example.class_organization.controller;
 
+import com.example.class_organization.dto.CompletedDTO;
 import com.example.class_organization.dto.PracticalClassDTO;
 import com.example.class_organization.model.PracticalClass;
 import com.example.class_organization.service.PracticalClassService;
@@ -45,6 +46,15 @@ public class PracticalClassController {
     @PatchMapping("/updateCompleted/{id}")
     public ResponseEntity<PracticalClass> updateComplited(@PathVariable String id){
         return ResponseEntity.ok(practicalClassService.updateCompleted(id));
+    }
+
+    @PostMapping("/{classId}/saga")
+    public ResponseEntity<String> completeClass(
+            @PathVariable Long classId,
+            @RequestBody CompletedDTO req) {
+
+        practicalClassService.completeClass(classId, req);
+        return ResponseEntity.ok("Class completion initiated");
     }
 
 }

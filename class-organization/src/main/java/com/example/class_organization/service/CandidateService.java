@@ -69,6 +69,10 @@ public class CandidateService {
     }
 
 
+    public void updateAttendanceByIds(Long candidateId,Long classId,boolean present,int km ) {
+       candidateRepository.updateAttendance(candidateId,classId,present,km);
+    }
+
     public void createAttendance(String username, Long classId){
         try{
             boolean present = false;
@@ -121,6 +125,16 @@ public class CandidateService {
 
     public List<Candidate> getCandidatesByInstructorId(String id){
         return candidateRepository.findCandidatesWithKmByInstructor(id);
+    }
+
+
+
+    public Candidate save(Candidate candidate){
+        return candidateRepository.save(candidate);
+    }
+
+    public Candidate getById(Long id) {
+        return candidateRepository.findByCandidateId(id).orElse(null);
     }
 
 
