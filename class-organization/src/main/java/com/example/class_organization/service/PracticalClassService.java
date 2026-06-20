@@ -3,8 +3,7 @@ package com.example.class_organization.service;
 import com.example.class_organization.config.RabbitConfig;
 import com.example.class_organization.dto.CompletedDTO;
 import com.example.class_organization.dto.PracticalClassDTO;
-import com.example.class_organization.model.Candidate;
-import com.example.class_organization.model.PracticalClass;
+import com.example.class_organization.model.*;
 import com.example.class_organization.repo.PracticalClassRepository;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -126,6 +125,7 @@ public class PracticalClassService {
 
         candidateService.updateAttendanceByIds(req.getCandidateId(),classId, true, req.getKmDriven());
 
+        Instructor instructor = instructorService.findByClassID(classId);
 
 
         CompletedDTO dto = new CompletedDTO();
@@ -136,6 +136,28 @@ public class PracticalClassService {
         dto.setStartTime(pc.getStartTime());
         dto.setEndTime(pc.getEndTime());
         dto.setInstructorNote(req.getInstructorNote());
+        dto.setCand_lastName(candidate.getLastname());
+        dto.setCand_name(candidate.getName());
+        dto.setCategory(candidate.getCategory().toString());
+        dto.setConsumedFuelLiters(req.getConsumedFuelLiters());
+
+
+        if (instructor != null) {
+            dto.setInst_name(instructor.getName());
+            dto.setInst_lastName(instructor.getLastname());
+
+            Vehicle vehicle = instructorService.findVehicleByInstId(instructor.getId());
+            if (vehicle != null) {
+                dto.setRegistration(vehicle.getRegistrationNumber());
+                dto.setMalfunction(vehicle.getStatus() == VehicleStatus.OUT_OF_SERVICE);
+            } else {
+                dto.setMalfunction(false);
+            }
+        } else {
+            dto.setMalfunction(false);
+        }
+
+
 
         System.out.println("Slanje poruke na RabbitMQ...-----------------------------------------------------*");
         rabbitTemplate.convertAndSend(

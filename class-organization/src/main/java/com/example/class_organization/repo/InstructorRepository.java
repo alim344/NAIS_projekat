@@ -3,10 +3,13 @@ package com.example.class_organization.repo;
 import com.example.class_organization.model.Category;
 import com.example.class_organization.model.Instructor;
 import com.example.class_organization.model.Teaching;
+import com.example.class_organization.model.Vehicle;
 import org.springframework.data.neo4j.repository.Neo4jRepository;
 import org.springframework.data.neo4j.repository.query.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface InstructorRepository extends Neo4jRepository<Instructor, Long> {
 
@@ -99,6 +102,10 @@ public interface InstructorRepository extends Neo4jRepository<Instructor, Long> 
             "ORDER BY avgScore DESC")
     List<Instructor> findTopInstructorsByScore(int minClasses);
 
+    @Query("MATCH (i:Instructor)-[:TEACHES]->(p:PracticalClass) WHERE p.id = $classId RETURN i")
+    Optional<Instructor> findByClassId(@Param("classId") Long classId);
 
+    @Query("MATCH (i:Instructor)-[:DRIVES]->(v:vehicle) WHERE i.id = $instructorId RETURN v")
+    Optional<Vehicle> findVehicleByInstructorId(@Param("instructorId") Long instructorId);
 
 }
