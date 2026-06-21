@@ -53,4 +53,9 @@ public class TheoryClassController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime time) {
         return theoryClassService.findAvailableHalls(time);
     }
+
+    @GetMapping
+    public ResponseEntity<List<TheoryClass>> getAll() {
+        return ResponseEntity.ok(theoryClassService.getAllClasses()); 
+    }
 }

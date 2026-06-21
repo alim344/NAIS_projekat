@@ -5,7 +5,7 @@ import com.example.theory_saga.dtos.SagaResultDTO;
 import com.example.theory_saga.dtos.TheoryClassLogDTO;
 import com.example.theory_saga.dtos.TheoryClassResponseDTO;
 import lombok.RequiredArgsConstructor;
-import lombok.Value;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;

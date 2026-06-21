@@ -240,6 +240,21 @@ services:
         timeout: 5s
         retries: 5
 
+  theory-saga:
+    build:
+      context: ./theory_saga
+    container_name: theory-saga-service
+    ports:
+      - "8095:8095"
+    environment:
+      - SERVER_PORT=8095
+      - SERVICES_THEORY_ORGANIZATION_URL=http://theory-organization-service:8090
+      - SERVICES_THEORY_SEARCH_URL=http://theory-search-service:8092
+    depends_on:
+      - theory-organization
+      - theory-search-service
+    networks:
+      - autoskola-network
 
 networks:
   autoskola-network:
