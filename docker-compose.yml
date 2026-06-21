@@ -13,6 +13,24 @@ services:
     networks:
       - autoskola-network
 
+  rabbitmq-mila:
+    image: rabbitmq:3-management
+    container_name: rabbitmq-mila
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=admin123
+    networks:
+      - autoskola-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
   class-organization:
     build:
       context: ./class-organization
@@ -23,8 +41,15 @@ services:
       - SPRING_NEO4J_URI=bolt://neo4j-mila:7687
       - SPRING_NEO4J_AUTHENTICATION_USERNAME=neo4j
       - SPRING_NEO4J_AUTHENTICATION_PASSWORD=password123
+      - SPRING_RABBITMQ_HOST=rabbitmq-mila
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=admin
+      - SPRING_RABBITMQ_PASSWORD=admin123
     depends_on:
-      - neo4j-mila
+      neo4j-mila:
+        condition: service_started
+      rabbitmq-mila:
+        condition: service_healthy
     networks:
       - autoskola-network
 
@@ -84,8 +109,10 @@ services:
       - SPRING_NEO4J_AUTHENTICATION_USERNAME=neo4j
       - SPRING_NEO4J_AUTHENTICATION_PASSWORD=password123
       - SERVER_PORT=8080
+      - INSTRUCTOR_ANALYTICS_URL=http://instructor-analytics-service:9090
     depends_on:
       - neo4j-tanja
+      - instructor-analytics
     networks:
       - autoskola-network
 
@@ -219,10 +246,16 @@ services:
       - SPRING_ELASTICSEARCH_URIS=http://elasticsearch-mila:9200
       - SPRING_DATA_REDIS_HOST=redis-mila
       - SPRING_DATA_REDIS_PORT=6379
+      - SPRING_RABBITMQ_HOST=rabbitmq-mila
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=admin
+      - SPRING_RABBITMQ_PASSWORD=admin123
     depends_on:
       elasticsearch-mila:
         condition: service_healthy
       redis-mila:
+        condition: service_healthy
+      rabbitmq-mila:
         condition: service_healthy
     networks:
       - autoskola-network
@@ -239,6 +272,7 @@ services:
         interval: 10s
         timeout: 5s
         retries: 5
+  
 
   theory-saga:
     build:

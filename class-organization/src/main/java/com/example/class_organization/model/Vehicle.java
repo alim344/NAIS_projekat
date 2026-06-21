@@ -23,4 +23,35 @@ public class Vehicle {
     private Integer currentMileage;
 
 
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getRegistrationNumber() {
+        return registrationNumber;
+    }
+
+    public void setRegistrationNumber(String registrationNumber) {
+        this.registrationNumber = registrationNumber;
+    }
+
+    public VehicleStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(VehicleStatus status) {
+        this.status = status;
+    }
+
+    public Integer getCurrentMileage() {
+        return currentMileage;
+    }
+
+    public void setCurrentMileage(Integer currentMileage) {
+        this.currentMileage = currentMileage;
+    }
 }

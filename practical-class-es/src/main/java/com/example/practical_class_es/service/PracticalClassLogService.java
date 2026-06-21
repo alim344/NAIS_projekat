@@ -3,8 +3,10 @@ package com.example.practical_class_es.service;
 import com.example.practical_class_es.doc.PracticalClassLog;
 import com.example.practical_class_es.repo.PracticalClassLogRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -38,6 +40,8 @@ public class PracticalClassLogService {
     public void delete(String id) {
         practicalClassLogRepo.deleteById(id);
     }
+
+
 
     /* ------CREATE----
 

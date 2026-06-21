@@ -3,10 +3,12 @@ package com.example.class_organization.repo;
 import com.example.class_organization.model.PracticalClass;
 import org.springframework.data.neo4j.repository.Neo4jRepository;
 import org.springframework.data.neo4j.repository.query.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 public interface PracticalClassRepository extends Neo4jRepository<PracticalClass, Long> {
 
@@ -31,5 +33,9 @@ public interface PracticalClassRepository extends Neo4jRepository<PracticalClass
             " SET pc.completed = $completed " +
             " RETURN pc")
     PracticalClass updateCompleted(String id, Boolean completed);
+
+    // PracticalClassRepository
+    @Query("MATCH (p:PracticalClass) WHERE p.id = $id RETURN p")
+    Optional<PracticalClass> findByClassId(@Param("id") Long id);
 
 }

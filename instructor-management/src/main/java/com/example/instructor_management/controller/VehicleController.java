@@ -3,6 +3,7 @@ package com.example.instructor_management.controller;
 
 import com.example.instructor_management.DTO.VehicleDTO;
 import com.example.instructor_management.model.Vehicle;
+import com.example.instructor_management.saga.AssignVehicleSagaOrchestrator;
 import com.example.instructor_management.service.VehicleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class VehicleController {
     private final VehicleService vehicleService;
+
+    private final AssignVehicleSagaOrchestrator sagaOrchestrator;
 
     @GetMapping
     public List<Vehicle> getAllVehicles() {
@@ -69,5 +72,16 @@ public class VehicleController {
     @GetMapping("/by-status")
     public List<Map<String, Object>> getVehiclesCountByStatus() {
         return vehicleService.getVehiclesCountByStatus();
+    }
+
+    @PostMapping("/{instructorId}/vehicles/{registrationNumber}/saga")
+    public ResponseEntity<String> assignVehicleViaSaga(
+            @PathVariable String instructorId,
+            @PathVariable String registrationNumber,
+            @RequestParam(defaultValue = "false") boolean simulateFail) {
+        boolean result = sagaOrchestrator.assignVehicleSaga(
+                instructorId, registrationNumber, simulateFail);
+        return result ? ResponseEntity.ok("Saga uspešna")
+                : ResponseEntity.badRequest().body("Saga neuspešna");
     }
 }

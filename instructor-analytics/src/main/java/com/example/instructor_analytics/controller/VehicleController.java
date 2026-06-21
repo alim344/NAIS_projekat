@@ -1,6 +1,8 @@
 package com.example.instructor_analytics.controller;
 
+import com.example.instructor_analytics.DTO.AssignInstructorRequest;
 import com.example.instructor_analytics.model.VehicleDocument;
+import com.example.instructor_analytics.repository.VehicleRepository;
 import com.example.instructor_analytics.service.VehicleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -16,6 +18,9 @@ public class VehicleController {
 
     @Autowired
     private VehicleService vehicleService;
+
+    @Autowired
+    private VehicleRepository vehicleRepository;
 
     @PostMapping
     public ResponseEntity<VehicleDocument> save(@RequestBody VehicleDocument vehicle) {
@@ -63,4 +68,12 @@ public class VehicleController {
         return vehicleService.getVehicleStatisticsByBrand(brand, status, minMileage);
     }
 
+    @PutMapping("/{registrationNumber}/assign-instructor")
+    public ResponseEntity<VehicleDocument> assignInstructor(
+            @PathVariable String registrationNumber,
+            @RequestBody AssignInstructorRequest request) {
+        VehicleDocument updated = vehicleService.assignInstructorToVehicle(
+                registrationNumber, request.getInstructorName(), request.getInstructorLastname());
+        return updated != null ? ResponseEntity.ok(updated) : ResponseEntity.notFound().build();
+    }
 }

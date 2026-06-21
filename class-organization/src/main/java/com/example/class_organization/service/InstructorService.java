@@ -1,9 +1,11 @@
 package com.example.class_organization.service;
 
 import com.example.class_organization.dto.AddingCandidatesDTO;
+import com.example.class_organization.dto.InstNameDTO;
 import com.example.class_organization.dto.InstructorDTO;
 import com.example.class_organization.model.Category;
 import com.example.class_organization.model.Instructor;
+import com.example.class_organization.model.Vehicle;
 import com.example.class_organization.repo.InstructorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
@@ -99,5 +101,17 @@ public class InstructorService {
     public List<Instructor> getTopInstructors(int minClasses){
         return instructorRepository.findTopInstructorsByScore(minClasses);
 
+    }
+
+    public Instructor findByClassID(Long id){
+        return instructorRepository.findByClassId(id).orElse(null);
+    }
+
+    public InstNameDTO findNameByClassID(Long id){
+        return instructorRepository.findInstructorNameByClassId(id).orElse(null);
+    }
+
+    public Vehicle findVehicleByInstId(Long id){
+        return instructorRepository.findVehicleByInstructorId(id).orElse(null);
     }
 }

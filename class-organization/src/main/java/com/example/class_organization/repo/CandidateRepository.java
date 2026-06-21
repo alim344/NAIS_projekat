@@ -5,6 +5,7 @@ import com.example.class_organization.model.Candidate;
 import com.example.class_organization.model.TrainingStatus;
 import org.springframework.data.neo4j.repository.Neo4jRepository;
 import org.springframework.data.neo4j.repository.query.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -105,5 +106,19 @@ public interface CandidateRepository extends Neo4jRepository<Candidate, Long> {
             "RETURN c " +
             "ORDER BY totalKm DESC")
     List<Candidate> findCandidatesWithKmByInstructor(String instructorId);
+
+    @Query("MATCH (c:Candidate:User) WHERE c.id = $id " +
+            "OPTIONAL MATCH (c)-[r:ATTENDS]->(p:PracticalClass) " +
+            "RETURN c, collect(r), collect(p)")
+    Optional<Candidate> findByCandidateId(@Param("id") Long id);
+
+    // CandidateRepository
+    @Query("MATCH (c:Candidate)-[r:ATTENDS]->(p:PracticalClass) " +
+            "WHERE c.id = $candidateId AND p.id = $classId " +
+            "SET r.present = $present, r.kmDriven = $kmDriven")
+    void updateAttendance(@Param("candidateId") Long candidateId,
+                          @Param("classId") Long classId,
+                          @Param("present") boolean present,
+                          @Param("kmDriven") int kmDriven);
 
 }
