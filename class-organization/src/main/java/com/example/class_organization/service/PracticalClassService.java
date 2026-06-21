@@ -2,6 +2,7 @@ package com.example.class_organization.service;
 
 import com.example.class_organization.config.RabbitConfig;
 import com.example.class_organization.dto.CompletedDTO;
+import com.example.class_organization.dto.InstNameDTO;
 import com.example.class_organization.dto.PracticalClassDTO;
 import com.example.class_organization.model.*;
 import com.example.class_organization.repo.PracticalClassRepository;
@@ -125,7 +126,8 @@ public class PracticalClassService {
 
         candidateService.updateAttendanceByIds(req.getCandidateId(),classId, true, req.getKmDriven());
 
-        Instructor instructor = instructorService.findByClassID(classId);
+        InstNameDTO instName = instructorService.findNameByClassID(classId);
+
 
 
         CompletedDTO dto = new CompletedDTO();
@@ -142,12 +144,14 @@ public class PracticalClassService {
         dto.setConsumedFuelLiters(req.getConsumedFuelLiters());
 
 
-        if (instructor != null) {
-            dto.setInst_name(instructor.getName());
-            dto.setInst_lastName(instructor.getLastname());
+        if (instName != null) {
+            dto.setInst_name(instName.getName());
+            dto.setInst_lastName(instName.getLastname());
+            dto.setInstructorId(instName.getId());
 
-            Vehicle vehicle = instructorService.findVehicleByInstId(instructor.getId());
+            Vehicle vehicle = instructorService.findVehicleByInstId(instName.getId());
             if (vehicle != null) {
+                dto.setVehicleId(vehicle.getId());
                 dto.setRegistration(vehicle.getRegistrationNumber());
                 dto.setMalfunction(vehicle.getStatus() == VehicleStatus.OUT_OF_SERVICE);
             } else {

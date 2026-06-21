@@ -1,5 +1,6 @@
 package com.example.class_organization.repo;
 
+import com.example.class_organization.dto.InstNameDTO;
 import com.example.class_organization.model.Category;
 import com.example.class_organization.model.Instructor;
 import com.example.class_organization.model.Teaching;
@@ -108,4 +109,6 @@ public interface InstructorRepository extends Neo4jRepository<Instructor, Long> 
     @Query("MATCH (i:Instructor)-[:DRIVES]->(v:vehicle) WHERE i.id = $instructorId RETURN v")
     Optional<Vehicle> findVehicleByInstructorId(@Param("instructorId") Long instructorId);
 
+    @Query("MATCH (i:Instructor)-[:TEACHES]->(p:PracticalClass) WHERE p.id = $classId RETURN i.id AS id,i.name AS name, i.lastname AS lastname")
+    Optional<InstNameDTO> findInstructorNameByClassId(@Param("classId") Long classId);
 }

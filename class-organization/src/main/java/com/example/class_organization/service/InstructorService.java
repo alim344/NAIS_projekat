@@ -1,6 +1,7 @@
 package com.example.class_organization.service;
 
 import com.example.class_organization.dto.AddingCandidatesDTO;
+import com.example.class_organization.dto.InstNameDTO;
 import com.example.class_organization.dto.InstructorDTO;
 import com.example.class_organization.model.Category;
 import com.example.class_organization.model.Instructor;
@@ -104,6 +105,10 @@ public class InstructorService {
 
     public Instructor findByClassID(Long id){
         return instructorRepository.findByClassId(id).orElse(null);
+    }
+
+    public InstNameDTO findNameByClassID(Long id){
+        return instructorRepository.findInstructorNameByClassId(id).orElse(null);
     }
 
     public Vehicle findVehicleByInstId(Long id){

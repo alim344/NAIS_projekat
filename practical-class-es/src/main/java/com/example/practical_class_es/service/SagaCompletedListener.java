@@ -34,6 +34,9 @@ public class SagaCompletedListener {
             log.setStartTime(event.getStartTime());
             log.setEndTime(event.getEndTime());
             log.setInstructorNote(event.getInstructorNote());
+            log.setConsumedFuelLiters(event.getConsumedFuelLiters());
+            log.setRoute("Bulevar Evrope-Bulevar Oslobodjenja-Centar");
+
 
 
             CandidateInfo ci = new CandidateInfo();
@@ -49,10 +52,14 @@ public class SagaCompletedListener {
             ii.setLastname(event.getInst_lastName());
 
             VehicleInfo vi = new VehicleInfo();
-            vi.setId(event.getVehicleId());
+            vi.setId(1L);
             vi.setMalfunction(event.isMalfunction());
-            vi.setRegistration(event.getRegistration());
+            vi.setRegistration("NS-123-AB");
             vi.setModel("Astra");
+
+            log.setInstructorInfo(ii);
+            log.setVehicleInfo(vi);
+
 
             logService.create(log);
 
