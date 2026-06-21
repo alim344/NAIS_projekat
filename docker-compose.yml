@@ -289,6 +289,22 @@ services:
       - theory-search-service
     networks:
       - autoskola-network
+      
+  theory-report:
+    build:
+      context: ./theory-report
+    container_name: theory-report-service
+    ports:
+      - "8501:8501"
+    environment:
+      - NEO4J_URL=http://theory-organization-service:8090
+      - ES_URL=http://theory-search-service:8092
+    depends_on:
+      - theory-organization
+      - theory-search-service
+    networks:
+      - autoskola-network
+
 
 networks:
   autoskola-network:
