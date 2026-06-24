@@ -70,12 +70,12 @@ with st.sidebar:
     st.caption(f"ES: {ES_URL}")
     st.divider()
 
-    st.markdown("**Filters - Section 2**")
+    st.markdown("**Filters — Section 2**")
     professor_filter = st.text_input("Professor username")
     classroom_filter = st.text_input("Classroom name")
 
     st.divider()
-    st.markdown("**Filters - Section 3**")
+    st.markdown("**Filters — Section 3**")
     from_date = st.text_input("From (ISO)", placeholder="2024-05-10T00:00:00")
     to_date   = st.text_input("To (ISO)",   placeholder="2024-05-12T00:00:00")
     min_cand  = st.number_input("Min. candidates", min_value=0, value=0)
@@ -91,7 +91,7 @@ st.caption("Sources: Neo4j (theory-organization-service) and Elasticsearch (theo
 st.divider()
 
 
-# ── Section 1 - Scheduled classes (Neo4j) ────────────────────────────────────
+# ── Section 1 — Scheduled classes (Neo4j) ────────────────────────────────────
 
 st.subheader("1. Scheduled Theory Classes")
 st.caption("Source: Neo4j / theory-organization-service :8090")
@@ -115,7 +115,7 @@ else:
             "ID":          c.get("id"),
             "Date & Time": dt,
             "Lesson":      f"L{lesson.get('orderNumber','?')} - {lesson.get('title','')}",
-            "Classroom":   room.get("name", "-"),
+            "Classroom":   room.get("name", "—"),
             "Capacity":    room.get("capacity", 0),
         })
 
@@ -129,7 +129,7 @@ else:
 st.divider()
 
 
-# ── Section 2 - Class logs (Elasticsearch) ───────────────────────────────────
+# ── Section 2 — Class logs (Elasticsearch) ───────────────────────────────────
 
 st.subheader("2. Class Log Records")
 st.caption("Source: Elasticsearch / theory-search-service :8092")
@@ -169,13 +169,13 @@ else:
 
     total_present = sum(l.get("candidateCount", 0) for l in logs)
     full_count    = sum(1 for l in logs if l.get("fullyAttended"))
-    avg_dur       = round(sum(l.get("durationMinutes", 0) for l in logs) / len(logs)) if logs else 0
+    #avg_dur       = round(sum(l.get("durationMinutes", 0) for l in logs) / len(logs)) if logs else 0
 
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Log records",    len(logs))
     c2.metric("Total present",  total_present)
     c3.metric("Fully attended", full_count)
-    c4.metric("Avg. duration",  f"{avg_dur} min")
+    #c4.metric("Avg. duration",  f"{avg_dur} min")
 
     if not df2.empty:
         def color_full(val):
@@ -191,7 +191,7 @@ else:
 st.divider()
 
 
-# ── Section 3 - Complex analysis ─────────────────────────────────────────────
+# ── Section 3 — Complex analysis ─────────────────────────────────────────────
 
 st.subheader("3. Instructor & Classroom Analysis")
 st.caption("Source: Elasticsearch / theory-search-service :8092")
@@ -212,15 +212,13 @@ df3     = pd.DataFrame()
 cu_rows = []
 
 if not err3 and analysis_data:
-    pass
-
     prof_rows = []
     for username, stats in flatten_keyed_stats(analysis_data.get("statsByProfessor")):
         prof_rows.append({
             "Instructor":       stats.get("fullName", username),
             "Classes":          stats.get("classCount", 0),
             "Total candidates": stats.get("totalCandidates", 0),
-            "Avg. duration":    round(stats.get("averageDurationMinutes", 0), 1),
+           # "Avg. duration":    round(stats.get("averageDurationMinutes", 0), 1),
         })
     df3 = pd.DataFrame(prof_rows)
     if not df3.empty:
@@ -234,7 +232,7 @@ if not err4 and classroom_data:
         cu_rows.append({
             "Classroom":        name,
             "Total classes":    stats.get("totalClasses", 0),
-            "Avg. occupancy %": round(stats.get("averageOccupancyPercent", 0), 1),
+            #"Avg. occupancy %": round(stats.get("averageOccupancyPercent", 0), 1),
             "Capacity":         stats.get("capacity", 0),
         })
     if cu_rows:
@@ -246,9 +244,9 @@ if not err4 and classroom_data:
 st.divider()
 
 
-# ── Section 4 - Chart ─────────────────────────────────────────────────────────
+# ── Section 4 — Chart ─────────────────────────────────────────────────────────
 
-st.subheader("4. Chart - Instructor activity")
+st.subheader("4. Chart — Instructor activity")
 st.caption("Source: Elasticsearch / theory-search-service :8092")
 
 if not df2.empty and "Instructor" in df2.columns:
@@ -274,31 +272,31 @@ if not df2.empty and "Instructor" in df2.columns:
         marker_color="#55A868",
         yaxis="y1",
     ))
-    fig.add_trace(go.Scatter(
-        name="Avg. duration (min)",
-        x=per_instructor["Instructor"],
-        y=per_instructor["Duration"].round(1),
-        mode="lines+markers",
-        marker=dict(size=8, color="#DD8452"),
-        line=dict(color="#DD8452", width=2, dash="dot"),
-        yaxis="y2",
-    ))
+    #fig.add_trace(go.Scatter(
+    #    name="Avg. duration (min)",
+    #    x=per_instructor["Instructor"],
+    #    y=per_instructor["Duration"].round(1),
+    #    mode="lines+markers",
+    #    marker=dict(size=8, color="#DD8452"),
+    #    line=dict(color="#DD8452", width=2, dash="dot"),
+    #    yaxis="y2",
+    #))
     fig.update_layout(
         barmode="group",
         yaxis=dict(title="Count"),
-        yaxis2=dict(title="Avg. duration (min)", overlaying="y", side="right", showgrid=False),
+        #yaxis2=dict(title="Avg. duration (min)", overlaying="y", side="right", showgrid=False),
         legend=dict(orientation="h", y=-0.2),
         height=420,
         margin=dict(t=30, b=80),
     )
     st.plotly_chart(fig, use_container_width=True)
 else:
-    st.info("No data for chart - Section 2 data not loaded.")
+    st.info("No data for chart — Section 2 data not loaded.")
 
 st.divider()
 
 
-# ── Section 5 - PDF export ────────────────────────────────────────────────────
+# ── Section 5 — PDF export ────────────────────────────────────────────────────
 
 st.subheader("5. Download Report")
 
@@ -326,16 +324,21 @@ def make_chart_image():
         return None
     per_instructor = (
         df2.groupby("Instructor")
-        .agg(Classes=("ID", "count"))
+        .agg(Classes=("ID", "count"), Present=("Present", "sum"))
         .reset_index()
-        .sort_values("Classes")
+        .sort_values("Classes", ascending=False)
     )
-    fig, ax = plt.subplots(figsize=(6, max(2.5, len(per_instructor) * 0.5)))
-    ax.barh(per_instructor["Instructor"], per_instructor["Classes"], color="#4C72B0")
-    ax.set_xlabel("Classes")
-    ax.set_title("Number of classes per instructor")
-    for i, val in enumerate(per_instructor["Classes"]):
-        ax.text(val + 0.05, i, str(val), va="center", fontsize=8)
+    instructors = per_instructor["Instructor"].tolist()
+    x = range(len(instructors))
+    width = 0.35
+    fig, ax = plt.subplots(figsize=(max(6, len(instructors) * 1.2), 4))
+    ax.bar([i - width/2 for i in x], per_instructor["Classes"], width, label="Classes held", color="#4C72B0")
+    ax.bar([i + width/2 for i in x], per_instructor["Present"], width, label="Total candidates present", color="#55A868")
+    ax.set_xticks(list(x))
+    ax.set_xticklabels(instructors, rotation=20, ha="right")
+    ax.set_ylabel("Count")
+    ax.set_title("Instructor activity")
+    ax.legend()
     plt.tight_layout()
     buf = io.BytesIO()
     fig.savefig(buf, format="png", dpi=150)
@@ -388,7 +391,7 @@ def generate_pdf():
     if chart:
         story += [
             PageBreak(),
-            Paragraph("4. Chart - Classes per instructor", h2),
+            Paragraph("4. Chart — Classes per instructor", h2),
             Spacer(1, 6),
             Image(chart, width=15*cm, height=7.5*cm),
         ]
