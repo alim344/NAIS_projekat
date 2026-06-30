@@ -103,8 +103,7 @@ public class DataLoader implements CommandLineRunner {
         instructor5.setLicenseExpiryDate(LocalDate.of(2026, 11, 5));
         instructor5.setCategories(Arrays.asList(Category.A, Category.A1, Category.A2));
         instructorService.saveInstructor(instructor5);
-
-        System.out.println("5 instruktora uneto (svi bez dodeljenih vozila).");
+        
     }
 
     private void loadVehicles() {
@@ -164,6 +163,28 @@ public class DataLoader implements CommandLineRunner {
         vehicleService.saveVehicle(vehicle5);
 
         System.out.println("5 vozila uneto (sva AVAILABLE, bez instruktora).");
+
+        VehicleDocument vehicle6 = new VehicleDocument();
+        vehicle6.setId(UUID.randomUUID().toString());
+        vehicle6.setRegistrationNumber("IN-777-ET");
+        vehicle6.setBrand("Ford");
+        vehicle6.setStatus("OUT_OF_SERVICE");
+        vehicle6.setCurrentMileage(20870);
+        vehicle6.setRegistrationExpiryDate(LocalDate.of(2027, 10, 12).format(dateFormatter));
+        vehicle6.setInstructorName(null);
+        vehicle6.setInstructorLastname(null);
+        vehicleService.saveVehicle(vehicle6);
+
+        VehicleDocument vehicle7 = new VehicleDocument();
+        vehicle7.setId(UUID.randomUUID().toString());
+        vehicle7.setRegistrationNumber("IN-850-TA");
+        vehicle7.setBrand("BMW");
+        vehicle7.setStatus("OUT_OF_SERVICE");
+        vehicle7.setCurrentMileage(30780);
+        vehicle7.setRegistrationExpiryDate(LocalDate.of(2026, 10, 10).format(dateFormatter));
+        vehicle7.setInstructorName(null);
+        vehicle7.setInstructorLastname(null);
+        vehicleService.saveVehicle(vehicle7);
     }
 
     private void printTestData() {
@@ -182,9 +203,10 @@ public class DataLoader implements CommandLineRunner {
         System.out.println("4. KG-321-DE | Opel | 52.380 km | Registracija ističe: 2028-03-25 | Instruktor: NEMA");
         System.out.println("5. SU-654-EF | Ford | 29.870 km | Registracija ističe: 2026-10-12 | Instruktor: NEMA");
 
-        System.out.println("\n--- STATUS ---");
-        System.out.println("Svi instruktori su SLOBODNI (nemaju dodeljeno vozilo)");
-        System.out.println("Sva vozila su SLOBODNA (AVAILABLE)");
+        System.out.println("\n--- VOZILA (sva OUT_OF_SERVICE, bez instruktora) ---");
+        System.out.println("6. IN-777-ET | Ford | 20.870 km | Registracija ističe: 2027-10-12 | Instruktor: NEMA");
+        System.out.println("7. IN-850-TA | BMW | 30.780 km | Registracija ističe: 2026-10-10 | Instruktor: NEMA");
+
         System.out.println("\n===================================\n");
     }
 

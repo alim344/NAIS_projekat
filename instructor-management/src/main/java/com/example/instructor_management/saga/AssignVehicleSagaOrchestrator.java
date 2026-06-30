@@ -34,82 +34,65 @@ public class AssignVehicleSagaOrchestrator {
 
     public boolean assignVehicleSaga(String instructorId, String vehicleRegistrationNumber, boolean simulateFail) {
         System.out.println("\n=== POKRETANJE SAGA - DODELA VOZILA INSTRUKTORU ===");
-        System.out.println("Instructor ID: " + instructorId);
-        System.out.println("Vehicle Registration: " + vehicleRegistrationNumber);
 
         Instructor instructor = instructorRepository.findById(instructorId).orElse(null);
         Vehicle vehicle = vehicleRepository.findByRegistrationNumber(vehicleRegistrationNumber).orElse(null);
 
         if (instructor == null || vehicle == null) {
-            System.err.println("[SAGA ORKESTRATOR] Instruktor ili vozilo ne postoji.");
+            System.err.println("[SAGA] Instruktor ili vozilo ne postoji.");
             return false;
         }
 
         if (vehicle.getStatus() != VehicleStatus.AVAILABLE) {
-            System.err.println("[SAGA ORKESTRATOR] Vozilo nije dostupno. Status: " + vehicle.getStatus());
+            System.err.println("[SAGA] Vozilo nije dostupno. Status: " + vehicle.getStatus());
             return false;
         }
 
-        // KORAK 1: Neo4j - dodela vozila instruktoru
-        Vehicle previousVehicle = instructor.getVehicle();
-        instructor.setVehicle(vehicle);
-        instructorRepository.save(instructor);
-
+        // =============================================
+        // KORAK 1: Neo4j — promeni status vozila
+        // =============================================
         vehicle.setStatus(VehicleStatus.IN_USE);
         vehicleRepository.save(vehicle);
-
-        System.out.println("[SAGA ORKESTRATOR] Korak 1 uspešan: Vozilo " + vehicleRegistrationNumber +
-                " dodeljeno instruktoru " + instructorId);
+        System.out.println("[SAGA] Korak 1 uspešan: Vehicle status -> IN_USE u Neo4j");
 
         try {
             if (simulateFail) {
-                throw new RuntimeException("Simulirani pad instructor-analytics servisa");
+                throw new RuntimeException("Simulirani pad Elasticsearch servisa");
             }
 
-            // KORAK 2: Elasticsearch - ažuriranje VehicleDocument
-            String vehicleUrl = analyticsServiceUrl + "/api/vehicles/" + vehicleRegistrationNumber + "/assign-instructor";
-            AssignInstructorRequest request = new AssignInstructorRequest(
-                    instructor.getName(), instructor.getLastname()
-            );
-            restTemplate.exchange(vehicleUrl, HttpMethod.PUT, new HttpEntity<>(request), String.class);
-            System.out.println("[SAGA ORKESTRATOR] Korak 2a uspešan: Elasticsearch vozilo ažurirano.");
+            // =============================================
+            // KORAK 2: Elasticsearch — dodeli vozilo instruktoru
+            // =============================================
+            String searchUrl = analyticsServiceUrl + "/api/instructors/by-email?email=" + instructor.getEmail();
+            ResponseEntity<Map> response = restTemplate.getForEntity(searchUrl, Map.class);
 
-            // KORAK 2: Elasticsearch - ažuriranje InstructorDocument
-            String instructorSearchUrl = analyticsServiceUrl + "/api/instructors/by-email?email=" + instructor.getEmail();
-            ResponseEntity<Map> response = restTemplate.getForEntity(instructorSearchUrl, Map.class);
-
-            if (response.getBody() != null && response.getBody().containsKey("id")) {
-                String esInstructorId = (String) response.getBody().get("id");
-                String instructorUpdateUrl = analyticsServiceUrl + "/api/instructors/" + esInstructorId + "/assign-vehicle";
-
-                Map<String, String> requestBody = new HashMap<>();
-                requestBody.put("registrationNumber", vehicleRegistrationNumber);
-
-                restTemplate.exchange(instructorUpdateUrl, HttpMethod.PUT,
-                        new HttpEntity<>(requestBody), String.class);
-                System.out.println("[SAGA ORKESTRATOR] Korak 2 uspešan: Elasticsearch instruktor ažuriran. Email: " + instructor.getEmail());
-            } else {
-                System.err.println("[SAGA ORKESTRATOR] Instruktor nije pronadjen u Elasticsearch-u! Email: " + instructor.getEmail());
+            if (response.getBody() == null || !response.getBody().containsKey("id")) {
+                throw new RuntimeException("Instruktor nije pronadjen u Elasticsearch-u! Email: " + instructor.getEmail());
             }
 
+            String esInstructorId = (String) response.getBody().get("id");
+            String assignUrl = analyticsServiceUrl + "/api/instructors/" + esInstructorId + "/assign-vehicle";
+
+            Map<String, String> requestBody = new HashMap<>();
+            requestBody.put("registrationNumber", vehicleRegistrationNumber);
+            restTemplate.exchange(assignUrl, HttpMethod.PUT, new HttpEntity<>(requestBody), String.class);
+
+            System.out.println("[SAGA] Korak 2 uspešan: vehicleRegistrationNumber -> " + vehicleRegistrationNumber + " u Elasticsearch");
             System.out.println("=== SAGA USPEŠNO ZAVRŠENA ===");
             return true;
 
         } catch (Exception e) {
-            System.err.println("[SAGA ORKESTRATOR] Korak 2 neuspešan: " + e.getMessage());
-            System.err.println("[SAGA ORKESTRATOR] Korak 3: POKREĆEM KOMPENZACIONU TRANSAKCIJU...");
+            // =============================================
+            // KOMPENZACIJA: vrati Neo4j na prethodno stanje
+            // =============================================
+            System.err.println("[SAGA] Korak 2 neuspešan: " + e.getMessage());
+            System.err.println("[SAGA] Pokrećem kompenzacionu transakciju...");
 
-            // KOMPENZACIJA:
-            instructor.setVehicle(previousVehicle);
-            instructorRepository.save(instructor);
-
-            // Vrati status vozila na AVAILABLE
             vehicle.setStatus(VehicleStatus.AVAILABLE);
             vehicleRepository.save(vehicle);
 
-            System.err.println("[SAGA ORKESTRATOR] Kompenzacija uspešna: Vozilo vraćeno na prethodno stanje.");
+            System.err.println("[SAGA] Kompenzacija uspešna: Vehicle status -> AVAILABLE u Neo4j");
             throw new RuntimeException("SAGA prekinuta: " + e.getMessage());
         }
     }
-
 }

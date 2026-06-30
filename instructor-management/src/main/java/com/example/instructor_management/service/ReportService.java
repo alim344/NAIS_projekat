@@ -2,8 +2,11 @@ package com.example.instructor_management.service;
 import com.example.instructor_management.DTO.VehicleAnalyticsDTO;
 import com.example.instructor_management.DTO.VehiclePageResponse;
 import com.example.instructor_management.model.Instructor;
+import com.example.instructor_management.model.InstructorDocuments;
+import com.example.instructor_management.model.TrainingStatus;
 import com.example.instructor_management.model.Vehicle;
 import com.example.instructor_management.repository.InstructorRepository;
+import com.example.instructor_management.repository.VehicleRepository;
 import com.lowagie.text.*;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
@@ -19,6 +22,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -26,6 +30,9 @@ import java.util.Map;
 public class ReportService {
     @Autowired
     private InstructorRepository instructorRepository;
+
+    @Autowired
+    private VehicleRepository vehicleRepository;
 
     @Autowired
     private RestTemplate restTemplate;
@@ -90,15 +97,11 @@ public class ReportService {
         for (Instructor i : instructors) {
             Vehicle v = i.getVehicle();
             if (v != null) {
-                VehicleAnalyticsDTO matched = vehicles.stream()
-                        .filter(vd -> vd.getRegistrationNumber().equals(v.getRegistrationNumber()))
-                        .findFirst()
-                        .orElse(null);
-
+                // Status i kilometraza direktno iz Neo4j, ne iz ES-a
                 combinedTable.addCell(new PdfPCell(new Phrase(i.getName() + " " + i.getLastname(), normalFont)));
                 combinedTable.addCell(new PdfPCell(new Phrase(v.getRegistrationNumber(), normalFont)));
-                combinedTable.addCell(new PdfPCell(new Phrase(matched != null ? matched.getStatus() : "N/A", normalFont)));
-                combinedTable.addCell(new PdfPCell(new Phrase(matched != null ? String.valueOf(matched.getCurrentMileage()) : "N/A", normalFont)));
+                combinedTable.addCell(new PdfPCell(new Phrase(v.getStatus().toString(), normalFont)));
+                combinedTable.addCell(new PdfPCell(new Phrase(String.valueOf(v.getCurrentMileage()), normalFont)));
             }
         }
         document.add(combinedTable);
@@ -109,8 +112,146 @@ public class ReportService {
         Image chartImage = generateVehicleStatusChart(vehicles);
         document.add(chartImage);
 
+        // =============================================
+        // SLOŽENA SEKCIJA 2: Instruktori sa kandidatima po statusu treninga
+        // =============================================
+        document.add(new Paragraph("5. Instruktori sa brojem kandidata po statusu treninga", headerFont));
+        document.add(new Paragraph(" "));
+
+        PdfPTable candidateStatusTable = new PdfPTable(6);
+        candidateStatusTable.setWidthPercentage(100);
+        addTableHeader(candidateStatusTable,
+                "Instruktor", "Ukupno kandidata", "THEORY", "PRACTICAL", "PASSED", "PENDING");
+
+        for (Instructor i : instructors) {
+            if (i.getCandidates() == null || i.getCandidates().isEmpty()) continue;
+
+            long theory = i.getCandidates().stream()
+                    .filter(c -> c.getTrainingStatus() == TrainingStatus.THEORY).count();
+            long practical = i.getCandidates().stream()
+                    .filter(c -> c.getTrainingStatus() == TrainingStatus.PRACTICAL).count();
+            long passed = i.getCandidates().stream()
+                    .filter(c -> c.getTrainingStatus() == TrainingStatus.PASSED).count();
+            long pending = i.getCandidates().stream()
+                    .filter(c -> c.getTrainingStatus() == TrainingStatus.PENDING).count();
+
+            candidateStatusTable.addCell(new PdfPCell(new Phrase(i.getName() + " " + i.getLastname(), normalFont)));
+            candidateStatusTable.addCell(new PdfPCell(new Phrase(String.valueOf(i.getCandidates().size()), normalFont)));
+            candidateStatusTable.addCell(new PdfPCell(new Phrase(String.valueOf(theory), normalFont)));
+            candidateStatusTable.addCell(new PdfPCell(new Phrase(String.valueOf(practical), normalFont)));
+            candidateStatusTable.addCell(new PdfPCell(new Phrase(String.valueOf(passed), normalFont)));
+            candidateStatusTable.addCell(new PdfPCell(new Phrase(String.valueOf(pending), normalFont)));
+        }
+        document.add(candidateStatusTable);
+        document.add(new Paragraph(" "));
+
+        // Grafikon 2: Pie chart - raspodela kandidata po TrainingStatus
+        document.add(new Paragraph("6. Grafikon - raspodela kandidata po statusu treninga", headerFont));
+        document.add(new Paragraph(" "));
+        Image pieChart = generateCandidateStatusPieChart(instructors);
+        document.add(pieChart);
+        document.add(new Paragraph(" "));
+
+        // =============================================
+        // SLOŽENA SEKCIJA 3: Instruktori sa dokumentima koji ističu u 30 dana
+        // =============================================
+        document.add(new Paragraph("7. Instruktori sa dokumentima koji ističu u narednih 30 dana", headerFont));
+        document.add(new Paragraph(" "));
+
+        PdfPTable expiryTable = new PdfPTable(4);
+        expiryTable.setWidthPercentage(100);
+        addTableHeader(expiryTable, "Instruktor", "Tip dokumenta", "Datum isteka", "Dana do isteka");
+
+        LocalDate today = LocalDate.now();
+        LocalDate in30Days = today.plusDays(30);
+
+        for (Instructor i : instructors) {
+            if (i.getDocuments() == null) continue;
+            for (InstructorDocuments doc : i.getDocuments()) {
+                if (doc.getExpiryDate() != null
+                        && !doc.getExpiryDate().isBefore(today)
+                        && !doc.getExpiryDate().isAfter(in30Days)) {
+
+                    long daysLeft = java.time.temporal.ChronoUnit.DAYS.between(today, doc.getExpiryDate());
+                    expiryTable.addCell(new PdfPCell(new Phrase(i.getName() + " " + i.getLastname(), normalFont)));
+                    expiryTable.addCell(new PdfPCell(new Phrase(doc.getDocumentType(), normalFont)));
+                    expiryTable.addCell(new PdfPCell(new Phrase(doc.getExpiryDate().toString(), normalFont)));
+                    expiryTable.addCell(new PdfPCell(new Phrase(String.valueOf(daysLeft), normalFont)));
+                }
+            }
+        }
+        document.add(expiryTable);
+        document.add(new Paragraph(" "));
+
+        // Grafikon 3: Bar chart - broj instruktora po opterecenju kandidatima
+        document.add(new Paragraph("8. Grafikon - broj instruktora po opterećenju kandidatima", headerFont));
+        document.add(new Paragraph(" "));
+        Image loadChart = generateInstructorLoadChart(instructors);
+        document.add(loadChart);
+
         document.close();
         return out.toByteArray();
+
+    }
+
+    // Grafikon 2: Pie chart
+    private Image generateCandidateStatusPieChart(List<Instructor> instructors) throws Exception {
+        org.jfree.data.general.DefaultPieDataset dataset = new org.jfree.data.general.DefaultPieDataset();
+
+        long theory = instructors.stream().flatMap(i -> i.getCandidates().stream())
+                .filter(c -> c.getTrainingStatus() == TrainingStatus.THEORY).count();
+        long practical = instructors.stream().flatMap(i -> i.getCandidates().stream())
+                .filter(c -> c.getTrainingStatus() == TrainingStatus.PRACTICAL).count();
+        long passed = instructors.stream().flatMap(i -> i.getCandidates().stream())
+                .filter(c -> c.getTrainingStatus() == TrainingStatus.PASSED).count();
+        long pending = instructors.stream().flatMap(i -> i.getCandidates().stream())
+                .filter(c -> c.getTrainingStatus() == TrainingStatus.PENDING).count();
+
+        if (theory > 0) dataset.setValue("THEORY", theory);
+        if (practical > 0) dataset.setValue("PRACTICAL", practical);
+        if (passed > 0) dataset.setValue("PASSED", passed);
+        if (pending > 0) dataset.setValue("PENDING", pending);
+
+        JFreeChart chart = ChartFactory.createPieChart(
+                "Raspodela kandidata po statusu treninga", dataset, true, true, false);
+
+        // Dodaj procente
+        org.jfree.chart.plot.PiePlot plot = (org.jfree.chart.plot.PiePlot) chart.getPlot();
+        plot.setLabelGenerator(new org.jfree.chart.labels.StandardPieSectionLabelGenerator(
+                "{0}: {2}", new java.text.DecimalFormat("0"), new java.text.DecimalFormat("0.0%")));
+
+        BufferedImage bufferedImage = chart.createBufferedImage(500, 300);
+        ByteArrayOutputStream chartOut = new ByteArrayOutputStream();
+        javax.imageio.ImageIO.write(bufferedImage, "png", chartOut);
+        return Image.getInstance(chartOut.toByteArray());
+    }
+
+    // Grafikon 3: Bar chart - opterecenje instruktora
+    private Image generateInstructorLoadChart(List<Instructor> instructors) throws Exception {
+        DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+
+        long noCandidates = instructors.stream()
+                .filter(i -> i.getCandidates() == null || i.getCandidates().isEmpty()).count();
+        long fewCandidates = instructors.stream()
+                .filter(i -> i.getCandidates() != null
+                        && i.getCandidates().size() >= 1
+                        && i.getCandidates().size() <= 2).count();
+        long manyCandidates = instructors.stream()
+                .filter(i -> i.getCandidates() != null && i.getCandidates().size() >= 3).count();
+
+        dataset.addValue(noCandidates, "Instruktori", "0 kandidata");
+        dataset.addValue(fewCandidates, "Instruktori", "1-2 kandidata");
+        dataset.addValue(manyCandidates, "Instruktori", "3+ kandidata");
+
+        JFreeChart chart = ChartFactory.createBarChart(
+                "Opterećenje instruktora po broju kandidata",
+                "Opterećenje", "Broj instruktora",
+                dataset, PlotOrientation.VERTICAL, false, true, false);
+
+        BufferedImage bufferedImage = chart.createBufferedImage(500, 300);
+        ByteArrayOutputStream chartOut = new ByteArrayOutputStream();
+        javax.imageio.ImageIO.write(bufferedImage, "png", chartOut);
+        return Image.getInstance(chartOut.toByteArray());
     }
 
     private void addTableHeader(PdfPTable table, String... headers) {
@@ -128,10 +269,13 @@ public class ReportService {
     }
 
     private Image generateVehicleStatusChart(List<VehicleAnalyticsDTO> vehicles) throws Exception {
+        // Ovo zameni da vuces iz Neo4j
+        List<Vehicle> neo4jVehicles = vehicleRepository.findAll(); // dodaj @Autowired VehicleRepository
+
         DefaultCategoryDataset dataset = new DefaultCategoryDataset();
-        Map<String, Long> countByStatus = vehicles.stream()
+        Map<String, Long> countByStatus = neo4jVehicles.stream()
                 .collect(java.util.stream.Collectors.groupingBy(
-                        VehicleAnalyticsDTO::getStatus, java.util.stream.Collectors.counting()));
+                        v -> v.getStatus().toString(), java.util.stream.Collectors.counting()));
 
         for (Map.Entry<String, Long> entry : countByStatus.entrySet()) {
             dataset.addValue(entry.getValue(), "Broj vozila", entry.getKey());
@@ -144,7 +288,6 @@ public class ReportService {
         BufferedImage bufferedImage = chart.createBufferedImage(500, 300);
         ByteArrayOutputStream chartOut = new ByteArrayOutputStream();
         javax.imageio.ImageIO.write(bufferedImage, "png", chartOut);
-
         return Image.getInstance(chartOut.toByteArray());
     }
 }
